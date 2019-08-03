@@ -1,0 +1,111 @@
+<template>
+  <div>
+    <el-row type="flex" justify="center" style="margin: 30px;">
+        <img src="../assets/logo.png" />
+    </el-row>
+    <el-row type="flex" justify="center">
+      <el-col :span="10">
+        <el-card class="box-card">
+          <el-form :model="login" status-icon :rules="rule" ref="login">
+            <el-form-item prop="username" label="用户名">
+              <el-input prefix-icon="el-icon-user" v-model="login.username" auto-complete="off" />
+            </el-form-item>
+            <el-form-item prop="password" label="密码" @keyup.enter.native="onSubmit('login')">
+              <el-input
+                prefix-icon="el-icon-key"
+                v-model="login.password"
+                type="password"
+                auto-complete="off"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button class="btn" type="primary" @click="onSubmit('login')">登陆</el-button>
+              <el-button class="btn" type="danger" @click="clearFrm()">清除</el-button>
+              <el-button class="btn" type="success" @click="loginOAuth">使用酒井ID登录</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
+</template>
+
+<script>
+/* eslint-disable */
+let md5 = require('js-md5');
+
+export default {
+  name: "login",
+  data() {
+    var checkUsername = (rule, value, cb) => {
+      if (value === "") {
+        cb(new Error("用户名不能为空"));
+      } else {
+        cb();
+      }
+    };
+    var checkPassword = (rule, value, cb) => {
+      if (value === "") {
+        cb(new Error("密码不能为空"));
+      } else {
+        cb();
+      }
+    };
+    return {
+      checked: false,
+      token: "",
+      login: {
+        username: "",
+        password: ""
+      },
+      rule: {
+        username: [{ validator: checkUsername, trigger: "blur" }],
+        password: [{ validator: checkPassword, trigger: "blur" }]
+      }
+    };
+  },
+  methods: {
+    onSubmit: function(login) {
+      this.$refs[login].validate(valid => {
+        if (valid) {
+          this.$http.post('userlogin', {'username': this.login.username, 'password': md5(this.login.password)}).then(response => {
+            let res = JSON.parse(response.bodyText)
+            if(res.status === 0) {
+            //if(true) {
+              window.sessionStorage.token = res.token
+              window.sessionStorage.username = res.username
+              window.sessionStorage.name = res.name
+              this.$router.push({ path: '/home' });
+            } else {
+              alert(res.message)
+            }
+          }).catch(function(response) {
+            console.log('Error')
+          })
+        }
+      });
+    },
+    clearFrm: function() {
+        this.login.username = '';
+        this.login.password = '';
+    },
+    loginOAuth: function() {
+      this.$http.get('userlogin_stucs').then((response) => {
+        let json = JSON.parse(response.bodyText)
+        if(json.status === 0) {
+          window.location = json.url
+        } else {
+          alert(result.message)
+        }
+      }).catch(function(response){
+        console.log('Error')
+      })
+    }
+  },
+  created() {
+    if(this.$route.query.message != null) {
+      alert(this.$route.query.message)
+    }
+  }
+};
+</script>

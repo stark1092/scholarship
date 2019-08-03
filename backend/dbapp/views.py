@@ -65,6 +65,50 @@ def check_login(f):
             return JsonResponse({'status': -1, 'message': '用户未登录'})
     return inner
 
+def check_teacher(f):
+    @wraps(f)
+    def inner(req, *arg, **kwargs):
+        try:
+            data = json.loads(req.body)
+        except:
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+        try:
+            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
+                user = models.User.objects.get(username=data['username'])
+                if(user.user_type == 1):
+                    updateToken(data['token'])
+                    return f(req, *arg, **kwargs)
+                else:
+                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            else:
+                return JsonResponse({'status': -1, 'message': '用户未登录'})
+        except Exception as e:
+            print(e)
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+    return inner
+
+
+def check_admin(f):
+    @wraps(f)
+    def inner(req, *arg, **kwargs):
+        try:
+            data = json.loads(req.body)
+        except:
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+        try:
+            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
+                user = models.User.objects.get(username=data['username'])
+                if(user.user_type == 2):
+                    updateToken(data['token'])
+                    return f(req, *arg, **kwargs)
+                else:
+                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            else:
+                return JsonResponse({'status': -1, 'message': '用户未登录'})
+        except Exception as e:
+            print(e)
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+    return inner
 
 def getIpAddr(req):
     if 'HTTP_X_FORWARDED_FOR' in req.META.keys():
@@ -121,19 +165,22 @@ def userlogin_stucs_cb(req):
                 result['message'] = '授权失败'
                 return JsonResponse(result)
             stu = stu['user']
+            print(stu)
             stu_info = {'username': stu['student_id'],
                         'name': stu['fullname'],
                         'mobile': stu['mobile'],
                         'email': stu['email'],
                         'student_id': stu['student_id'],
-                        'is_admin': False,
                         'is_project_started': False}
+            ## Allow teachers to login via Accounts9
+            if(stu['student_type'] == 'staff'):
+                stu_info['user_type'] = 1
             try:
                 user, created = models.User.objects.get_or_create(
                     student_id=stu['student_id'], defaults=stu_info)
                 models.LogAction('login', user, getIpAddr(req))
                 result['token'] = createToken(user.username)
-                result['is_admin'] = user.is_admin
+                result['user_type'] = user.user_type
                 result['status'] = 0
                 result['name'] = user.name
                 result['username'] = user.username
@@ -154,7 +201,7 @@ def userlogin(req):
             data = json.loads(req.body)
             print(data)
             user = models.User.objects.get(username=data['username'])
-            if(user.password == ''):
+            if(user.user_type == 0):
                 result['message'] = '登录失败，该用户禁止使用密码登录'
                 models.LogAction('login_failure', user, getIpAddr(
                     req), 'User is not allowed to login via password')
@@ -167,7 +214,7 @@ def userlogin(req):
             else:
                 models.LogAction('login', user, getIpAddr(req))
                 result['token'] = createToken(user.username)
-                result['is_admin'] = user.is_admin
+                result['user_type'] = user.user_type
                 result['name'] = user.name
                 result['status'] = 0
                 return JsonResponse(result)
@@ -190,7 +237,6 @@ def getPersonalInfo(req):
             res.pop('password')
             res.pop('id')
             res.pop('apply_id')
-            res.pop('is_admin')
             result['status'] = 0
             result['data'] = res
             return JsonResponse(result)

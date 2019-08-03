@@ -49,7 +49,7 @@ class User(models.Model):
     password = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=30)
-    is_admin = models.BooleanField()
+    user_type = models.IntegerField(null=False, default=0)
     ## extended user info
     class_name = models.CharField(max_length=30)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)

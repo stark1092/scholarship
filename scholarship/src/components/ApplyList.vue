@@ -178,7 +178,7 @@ export default {
   },
   components: { List },
   created() {
-    this.$http.get('get_all_applicants').then((response) => {
+    /*this.$http.get('get_all_applicants').then((response) => {
       let json = JSON.parse(response.bodyText);
       if(json.status == 0) {
         this.buffer = json.applicant;
@@ -187,7 +187,7 @@ export default {
       }
     }).catch(function(response){
       console.log('Error')
-    })
+    })*/
   },
   methods: {
     handlePageChange(val) {

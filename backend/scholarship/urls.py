@@ -23,5 +23,6 @@ urlpatterns = [
     path('userlogin_stucs_cb', views.userlogin_stucs_cb),
     path('userlogin', views.userlogin),
     path('getPersonalInfo', views.getPersonalInfo),
-    path('changePersonalInfo', views.changePersonalInfo)
+    path('changePersonalInfo', views.changePersonalInfo),
+    path('getNotify', views.getNotify)
 ]

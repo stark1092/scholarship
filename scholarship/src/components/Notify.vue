@@ -39,14 +39,20 @@ export default {
   },
   methods: {
     getNotify() {
-      /*this.$http.get('get_notify').then((response) => {
-          let json = JSON.parse(response.bodyText);
-          if(json.status == 0) {
-            this.tableData = json.notify
-          }
-        }).catch(function(response){
-          console.log('Error')
-        })*/
+      this.$http.post('getNotify', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username})
+      .then(response => {
+            let res = JSON.parse(response.bodyText)
+            if(res.status === 0) {
+               this.tableData = res.data
+            } else {
+              if(res.status === -1) {
+                this.$router.push('/')
+              }
+              alert(res.message)
+            }
+          }).catch(function(response) {
+            console.log('Error')
+      })
     },
     handleDetails(idx, row) {
       if(idx >= 0 && this.tableData != null && this.tableData[idx] != null && this.tableData[idx].link != null) {

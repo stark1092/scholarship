@@ -227,6 +227,7 @@ def userlogin(req):
 @check_login
 @csrf_exempt
 def getPersonalInfo(req):
+    print('getPersonalInfo')
     if(req.method == 'POST'):
         result = {'status': 1}
         try:
@@ -261,3 +262,35 @@ def changePersonalInfo(req):
             print(e)
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
+
+@check_login
+@csrf_exempt
+def getNotify(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        testNotify()
+        try:
+            data = json.loads(req.body)
+            result['status'] = 0
+            notify = []
+            notifies = models.Notify.objects.all()
+            for each_notify in notifies:
+                notify.append({'title' : each_notify.title,
+                            'date' : each_notify.date,
+                            'link' : each_notify.link})
+            result['data'] = notify
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+            return JsonResponse(result)
+
+
+def testNotify():
+    models.Notify.objects.all().delete()
+    for i in range(5):
+        notify = models.Notify(title = 'test' + str(i),
+                    date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    link = 'link' + str(i))
+        notify.save()
+    models.Notify.objects.filter(title='test2').delete()

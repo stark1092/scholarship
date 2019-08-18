@@ -235,9 +235,8 @@ def getPersonalInfo(req):
             res = models.User.objects.get(username=data['username'])
             models.LogAction('getPersonalInfo', res, getIpAddr(req))
             res = model_to_dict(res)
-            res.pop('password')
-            res.pop('id')
-            res.pop('apply_id')
+            res.pop('password') ## !important
+            res.pop('user_id')
             result['status'] = 0
             result['data'] = res
             return JsonResponse(result)

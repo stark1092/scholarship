@@ -44,12 +44,13 @@ class User(models.Model):
         ('other', 'other')
     )
     ## basic user info
-    id = models.AutoField(primary_key=True)
+    user_id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=30)
     user_type = models.IntegerField(null=False, default=0)
+    ## user_type: 0 for student, 1 for teacher, 2 for admin
     ## extended user info
     class_name = models.CharField(max_length=30)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
@@ -67,8 +68,6 @@ class User(models.Model):
     is_project_started = models.BooleanField()
     ## self-maintained info
     register_date = models.DateTimeField(auto_now_add=True)
-    apply_id = models.IntegerField(default=0)
-    apply_date = models.DateTimeField(auto_now_add=True)
     last_modify = models.DateTimeField(auto_now=True)    
 
 class Log(models.Model):
@@ -83,7 +82,64 @@ class Notify(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100)
     date = models.DateTimeField(auto_now_add=True)
-    link = models.TextField(max_length=1000)
+    link = models.TextField()
+
+"""
+Dependency chain:
+
+Apply Material <- Score Rule <- Apply Info
+"""
+class ApplyMaterialSetting(models.Model):
+    apply_material_id = models.AutoField(primary_key=True)
+    alias = models.CharField(max_length=500)       ### alias for a rule, e.g. 计算机系奖学金申请材料模板
+    json = models.TextField()  ### json settings for frontend, @see template data in corresponding js file
+    set_time = models.DateTimeField(auto_now_add=True)
+
+class ApplyScoreRuleSetting(models.Model):
+    apply_score_rule_id = models.AutoField(primary_key=True)
+    alias = models.CharField(max_length=500)
+    json = models.TextField()
+    set_time = models.DateTimeField(auto_now_add=True)
+    apply_material_id = models.ForeignKey(ApplyMaterialSetting, on_delete=models.CASCADE)  ## Rules are only compatible with corresponding material setting
+
+"""
+Defines the apply info, e.g. Scholarship name, score_rule
+"""
+class ApplyInfoSetting(models.Model):
+    apply_info_id = models.AutoField(primary_key=True)
+    scholarship_name = models.CharField(max_length=500)
+    apply_score_rule_id = models.ForeignKey(ApplyScoreRuleSetting, on_delete=models.CASCADE)
+    apply_material_id = models.ForeignKey(ApplyMaterialSetting, on_delete=models.CASCADE)
+    set_time = models.DateTimeField(auto_now_add=True)
+    can_apply = models.BooleanField(default=False)
+
+"""
+Apply info for a user (Unique for the same scholarship)
+Note that if admin changes material settings(in other words, generates a new material id), previous records should be invalidated;
+if admin changes score rule settings, the score of the students will be re-evaluated
+
+We use lazy method to calculate the score, that is, we only calculate it iff. `is_score_updated` is False
+If `json` or `apply_score_rule_id` is changed, we should set is_score_updated to False
+
+Way to extract data (of a certain scholarship):
+find apply_info_id == current_apply_info_id && is_user_confirm, update score if necessary, output value
+"""
+class ApplyInfo(models.Model):
+    apply_id = models.AutoField(primary_key=True)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    json = models.TextField()
+    apply_info_id = models.ForeignKey(ApplyInfoSetting, on_delete=models.CASCADE)
+    apply_score_rule_id = models.ForeignKey(ApplyScoreRuleSetting, on_delete=models.CASCADE)
+    apply_material_id = models.ForeignKey(ApplyMaterialSetting, on_delete=models.CASCADE)
+    apply_date = models.DateTimeField(auto_now_add=True)
+    score = models.IntegerField(null=False, default=0)
+    is_score_updated = models.BooleanField(default=False)
+    is_user_confirm = models.BooleanField(default=False)  ### If user saves temporarily, this field will be False
+
+class TeacherScore(models.Model):
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    teacher_id = models.IntegerField(null=False, default=0)
+    score = models.IntegerField(null=False, default=0)
 
 def LogAction(action, username, ip, details=''):
     Log.objects.create(action=action,username=username, details=details,ip=ip)

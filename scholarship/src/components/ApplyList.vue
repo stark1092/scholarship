@@ -182,7 +182,10 @@ export default {
     };
   },
   components: { List },
-  created() {
+  created () {
+    this.fakeAddData();
+    this.numPages = Math.ceil(this.buffer.length / numElemPerPage);
+    this.handlePageChange(1);
     /*this.$http.get('get_all_applicants').then((response) => {
       let json = JSON.parse(response.bodyText);
       if(json.status == 0) {

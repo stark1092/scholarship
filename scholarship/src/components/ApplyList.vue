@@ -70,7 +70,7 @@ const numElemPerPage = 15;
 export default {
   data() {
     return {
-      isAdmin: false,
+      isAdmin: false,  // TODO - set this according to user type
       numPages: 0,
       model: {
         tableColumn: [
@@ -124,6 +124,11 @@ export default {
             type: "text",
             label: "社工得分",
             name: "work_score"
+          },
+          {
+            type: "text",
+            label: "教师评分",
+            name: "teacher_score"
           },
           {
             type: "text",
@@ -214,6 +219,7 @@ export default {
         patent: "1",
         academic_score: "2",
         work_score: "3",
+        teacher_score: "0",
         tot_score: "5",
         num_report: "0",
         link: {

@@ -16,6 +16,7 @@
                 v-model="login.password"
                 type="password"
                 auto-complete="off"
+                show-password
               />
             </el-form-item>
             <el-form-item>
@@ -37,20 +38,6 @@ let md5 = require('js-md5');
 export default {
   name: "login",
   data() {
-    var checkUsername = (rule, value, cb) => {
-      if (value === "") {
-        cb(new Error("用户名不能为空"));
-      } else {
-        cb();
-      }
-    };
-    var checkPassword = (rule, value, cb) => {
-      if (value === "") {
-        cb(new Error("密码不能为空"));
-      } else {
-        cb();
-      }
-    };
     return {
       checked: false,
       token: "",
@@ -59,8 +46,8 @@ export default {
         password: ""
       },
       rule: {
-        username: [{ validator: checkUsername, trigger: "blur" }],
-        password: [{ validator: checkPassword, trigger: "blur" }]
+        username: [{ required: true, message: "用户名不能为空", trigger: "blur" }],
+        password: [{ required: true, message: "密码不能为空", trigger: "blur" }]
       }
     };
   },

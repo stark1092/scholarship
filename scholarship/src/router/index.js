@@ -2,7 +2,9 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import Login from '@/components/Login'
 import ScholarshipMain from '@/components/ScholarshipMain'
+import ScholarshipAdminMain from '@/components/admin/ScholarshipAdminMain'
 import Notify from '@/components/Notify'
+import SendNotify from '@/components/admin/SendNotify'
 import ApplyMain from '@/components/ApplyMain'
 import ApplyList from '@/components/ApplyList'
 import HelloWorld from '@/components/HelloWorld'
@@ -21,6 +23,9 @@ const router = new Router({
       }
     },
     {
+      /**
+       * Router for common users
+       */
       path: '/home',
       component: ScholarshipMain,
       meta: {
@@ -42,6 +47,42 @@ const router = new Router({
         {
           path: 'apply_list',
           component: ApplyList
+        }
+      ]
+    },
+    {
+      /**
+       * Router for admins
+       */
+      path: '/admin',
+      component: ScholarshipAdminMain,
+      meta: {
+        needLogin: true
+      },
+      children: [
+        {
+          path: 'view_notify',
+          component: Notify
+        },
+        {
+          path: 'apply_list',
+          component: ApplyList
+        },
+        {
+          path: 'notify',
+          component: SendNotify
+        },
+        {
+          path: 'apply_info_settings',
+          component: Notify
+        },
+        {
+          path: 'apply_score_rule_settings',
+          component: Notify
+        },
+        {
+          path: 'apply_material_settings',
+          component: Notify
         }
       ]
     },

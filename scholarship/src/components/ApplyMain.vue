@@ -105,12 +105,8 @@ export default {
   },
   components: { PerInfo, EditableList },
   created() {
-    if (this.$route.path === "/home/view_apply") {
-        this.readOnly = true
-      } else if (this.$route.path === "/home/apply") {
-        this.readOnly = false
-    }
-    let settings = getApplyMainSettings()
+    this.setReadOnly();
+    let settings = getApplyMainSettings();
     this.academic_criteria = settings.academic_criteria
     this.academic_note = settings.academic_note
     this.work_criteria = settings.work_criteria
@@ -118,6 +114,16 @@ export default {
     this.other_note = settings.other_note
   },
   methods: {
+    setReadOnly() {
+      let re_view_apply = /^\/.*?view_apply$/;
+      let re_apply = /^\/.*?apply/;
+      if (re_view_apply.test(this.$route.path)) {
+        this.readOnly = true
+        // trigger update
+      } else if (re_apply.test(this.$route.path)) {
+        this.readOnly = false
+      }
+    },
     onSubmit() {
       let form_res = {
         academic: {},
@@ -137,12 +143,7 @@ export default {
   },
   watch: {
     $route: function() {
-      if (this.$route.path === "/home/view_apply") {
-        this.readOnly = true
-        // trigger update
-      } else if (this.$route.path === "/home/apply") {
-        this.readOnly = false
-      }
+      this.setReadOnly();
     }
   }
 };

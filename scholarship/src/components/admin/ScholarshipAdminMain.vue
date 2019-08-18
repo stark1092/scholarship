@@ -4,7 +4,7 @@
       <el-header class="main-header">
         <el-row align="middle" type="flex">
           <el-col :span="2" v-bind:style="{'width' : sidebarCol / 24 * 100 + 'vw'}">
-            <el-link :underline="false" type="info" style="font-size: 18px;">奖学金系统</el-link>
+            <el-link :underline="false" type="info" style="font-size: 18px;">管理员主页</el-link>
           </el-col>
           <el-col :span="18" class="hidden-sm-and-down">
             <el-menu
@@ -30,7 +30,7 @@
               type="primary"
               class="hidden-sm-and-down"
               @click="changePerInfo"
-            >修改信息</el-link>
+            >修改密码</el-link>
           </el-col>
           <el-col :span="1">
             <el-link
@@ -78,7 +78,7 @@
       </el-footer>
     </el-container>
     <el-dialog
-      title="个人信息修改"
+      title="密码修改"
       :visible.sync="dialogFormVisible"
       width="40%"
       :close-on-click-modal="false"
@@ -93,7 +93,7 @@
       </el-row>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">取 消</el-button>
-        <el-button type="primary" @click="dialogFormVisible = false; changePerInfoSubmit();">确 定</el-button>
+        <el-button type="primary" @click="changePerInfoSubmit();">确 定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -147,37 +147,43 @@ $color: #fff;
 <script>
 /* eslint-disable */
 import "element-ui/lib/theme-chalk/display.css";
-import PerInfo from "./PersonalInfo";
-import {footer} from '../api/basicSettings';
+import PerInfo from "./AdminPersonalInfo";
+import { footer } from "../../api/basicSettings";
 
 export default {
   data() {
     return {
       defaultActive: "0",
       textFontSize: 14,
-      sidebarCol: 2.5,
+      sidebarCol: 3,
       name: "",
       sidebarItems: [
         {
-          link: "/home/notify",
-          name: "通知",
+          link: "/admin/view_notify",
+          name: "查看通知",
           icon: "el-icon-message"
         },
         {
-          link: "/home/apply",
-          name: "申请",
-          icon: "el-icon-thumb"
-        },
-        {
-          link: "/home/view_apply",
-          name: "查看申请",
-          icon: "el-icon-reading"
-        },
-        {
-          link: "/home/apply_list",
+          link: "/admin/apply_list",
           name: "申请列表",
           icon: "el-icon-tickets"
-        },
+        },{
+          link: "/admin/notify",
+          name: "发送通知",
+          icon: "el-icon-upload2"
+        },{
+          link: "/admin/apply_info_settings",
+          name: "奖学金申请设置",
+          icon: "el-icon-setting"
+        },{
+          link: "/admin/apply_score_rule_settings",
+          name: "评分标准设置",
+          icon: "el-icon-coordinate"
+        },{
+          link: "/admin/apply_material_settings",
+          name: "提交材料设置",
+          icon: "el-icon-files"
+        }
       ],
       footerMsg: footer,
       dialogFormVisible: false
@@ -195,7 +201,10 @@ export default {
     if (!foundItem) {
       this.$router.push(this.sidebarItems[0].link);
     }
-    if(window.sessionStorage.token != null && window.sessionStorage.name != null)
+    if (
+      window.sessionStorage.token != null &&
+      window.sessionStorage.name != null
+    )
       this.name = window.sessionStorage.name;
   },
   methods: {
@@ -211,14 +220,17 @@ export default {
       }
     },
     exitLogin() {
-      window.sessionStorage.clear()
-      this.$router.push('/')
+      window.sessionStorage.clear();
+      this.$router.push("/");
     },
     changePerInfo() {
       this.dialogFormVisible = true;
     },
     changePerInfoSubmit() {
-      this.$http.post('changePersonalInfo', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
+      if (this.$refs["perinfo"].valid) {
+        this.dialogFormVisible = false;
+        console.log(this.$refs['perinfo'].onSubmit())
+        /*this.$http.post('changeAdminPersonalInfo', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
       'data': this.$refs['perinfo'].perinfo}).then(response => {
             let res = JSON.parse(response.bodyText)
             if(res.status === 0) {
@@ -232,10 +244,10 @@ export default {
             }
           }).catch(function(response) {
             console.log('Error')
-      })
+      })*/
+      }
     }
   },
   components: { PerInfo }
 };
 </script>
-

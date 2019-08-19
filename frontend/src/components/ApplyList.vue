@@ -10,7 +10,7 @@
             :value="item.value"
           ></el-option>
         </el-select>
-        <el-select v-model="filter.stu_type" placeholder>
+        <el-select v-model="filter.stu_type" placeholder style="width: 5vw; min-width: 80px;">
           <el-option
             v-for="item in filter.stu_types"
             :key="item.value"
@@ -20,7 +20,7 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-select v-model="filter.department" placeholder>
+        <el-select v-model="filter.department" placeholder style="width: 8vw; min-width: 100px;">
           <el-option
             v-for="item in filter.departments"
             :key="item.value"
@@ -30,7 +30,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="排序">
-        <el-select v-model="filter.ordering" placeholder>
+        <el-select v-model="filter.ordering" placeholder style="width: 7vw; min-width: 130px;">
           <el-option
             v-for="item in filter.ordering_list"
             :key="item.value"

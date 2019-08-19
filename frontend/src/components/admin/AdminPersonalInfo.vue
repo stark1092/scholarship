@@ -1,5 +1,5 @@
 <template>
-  <el-form label-position="left" label-width="10vw" size="small" :model="perinfo" status-icon :rules="rule">
+  <el-form label-position="left" label-width="13vw" size="small" :model="perinfo" status-icon :rules="rule">
     <el-form-item label="原密码" prop="old_pwd">
       <el-input
         v-model="perinfo.old_pwd"
@@ -77,7 +77,7 @@ export default {
         new_pwd_confirm: ""
       },
       valid: false,
-      elemWidth: 15,
+      elemWidth: 25,
       rule: {
         old_pwd: [
           { required: true, validator: validatorCommon, trigger: "blur" }

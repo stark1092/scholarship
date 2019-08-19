@@ -1,5 +1,5 @@
 <template>
-  <el-form label-position="left" label-width="5vw" size="small">
+  <el-form label-position="right" label-width="13vw" size="small">
     <el-form-item label="姓名">
       <el-input
         v-model="perinfo.name"
@@ -245,7 +245,7 @@ export default {
           label: "否"
         }
       ],
-      elemWidth: 15
+      elemWidth: 20
     };
   }
 };

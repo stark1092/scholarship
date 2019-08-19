@@ -1,11 +1,13 @@
 <template>
   <div class="apply-main-container">
     <el-row type="flex" justify="start" align="middle">
-      <el-col :span="3">
+      <el-col align="start">
         <h1>申请的奖学金名称</h1>
       </el-col>
-      <el-col :span="2">
-        <el-select v-model="scholarship_name" placeholder="请选择要申请的奖学金" style="width: 20vw;"
+    </el-row>
+    <el-row type="flex" justify="start" align="middle" style="margin-top: 20px;">
+      <el-col align="start">
+        <el-select v-model="scholarship_name" placeholder="请选择要申请的奖学金" style="width: 30vw;"
         :disabled="readOnly || is_teacher">
           <el-option
             v-for="item in available_scholarships"
@@ -18,18 +20,18 @@
     </el-row>
     <el-divider></el-divider>
     <el-row type="flex" justify="start" align="middle" :gutter="0">
-      <el-col :span="2">
+      <el-col align="start">
         <h1>基本信息</h1>
       </el-col>
     </el-row>
     <el-divider></el-divider>
     <el-row type="flex" justify="start">
-      <el-col :span="5" :push="1">
+      <el-col align="start">
         <PerInfo disabled></PerInfo>
       </el-col>
     </el-row>
     <el-row type="flex" justify="start" style="margin-top: 30px">
-      <el-col :span="2">
+      <el-col align="start">
         <h1>
           学术成果
           <el-tooltip
@@ -46,12 +48,12 @@
     </el-row>
     <el-divider></el-divider>
     <el-row type="flex" justify="center" v-for="item in academic_criteria" :key="item.name">
-      <el-col :span="24">
+      <el-col>
         <EditableList :model="item.content" :ref="item.name" :isReadOnly="readOnly || is_teacher"></EditableList>
       </el-col>
     </el-row>
     <el-row type="flex" justify="start" style="margin-top: 30px">
-      <el-col :span="2">
+      <el-col align="start">
         <h1>
           社工经历
           <el-tooltip
@@ -68,12 +70,12 @@
     </el-row>
     <el-divider></el-divider>
     <el-row type="flex" justify="center" v-for="item in work_criteria" :key="item.name">
-      <el-col :span="24">
+      <el-col>
         <EditableList :model="item.content" :ref="item.name" :isReadOnly="readOnly || is_teacher"></EditableList>
       </el-col>
     </el-row>
     <el-row type="flex" justify="start" style="margin-top: 30px">
-      <el-col :span="2">
+      <el-col align="start">
         <h1>
           其他学术奖项
           <el-tooltip
@@ -90,7 +92,7 @@
     </el-row>
     <el-divider></el-divider>
     <el-row type="flex" justify="start" style="margin-bottom: 30px;">
-      <el-col :span="12">
+      <el-col :span="18" align="start">
         <el-input
           type="textarea"
           autosize
@@ -198,6 +200,9 @@ export default {
         form_res.work[item.name] = that.$refs[item.name][0].getContent();
       });
       form_res["other_academic"] = this.other_academic_awards;
+      // TODO - send this data to server side
+      // TODO - remember to include scholarship_name and id
+      // because the system supports multiple types of applications simultaneously
       console.log(JSON.stringify(form_res));
     }
   },

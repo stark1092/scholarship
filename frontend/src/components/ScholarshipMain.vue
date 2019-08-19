@@ -1,12 +1,12 @@
 <template>
   <div>
-    <el-container class="main">
-      <el-header class="main-header">
+    <el-container class="main" direction="vertical">
+      <el-header class="main-header" style="align-items: center;">
         <el-row align="middle" type="flex">
-          <el-col :span="2" v-bind:style="{'width' : sidebarCol / 24 * 100 + 'vw'}">
+          <el-col :xs="5" :sm="4" :md="3" :lg="2" :xl="1">
             <el-link :underline="false" type="info" style="font-size: 18px;">奖学金系统</el-link>
           </el-col>
-          <el-col :span="18" class="hidden-sm-and-down">
+          <el-col :xs="8" :sm="16" :md="18">
             <el-menu
               default-active="0"
               style="padding: 0;"
@@ -20,33 +20,30 @@
           </el-col>
           <el-col
             v-bind:style="{ 'font-size': textFontSize + 'px'}"
-            :span="2"
-            class="hidden-sm-and-down"
+            :xs="3" :sm="4" :md="2"
           >你好, {{ name }}</el-col>
-          <el-col :span="2">
+          <el-col :xs="3" :sm="3" :md="2">
             <el-link
               v-bind:style="{ 'font-size': textFontSize + 'px'}"
               :underline="false"
               type="primary"
-              class="hidden-sm-and-down"
               @click="changePerInfo"
             >{{isTeacher ? '修改密码': '修改信息'}}</el-link>
           </el-col>
-          <el-col :span="1">
+          <el-col :xs="1" :sm="2" :md="1">
             <el-link
               v-bind:style="{ 'font-size': textFontSize + 'px'}"
               :underline="false"
               type="primary"
               @click="exitLogin"
-              class="hidden-sm-and-down"
             >退出</el-link>
           </el-col>
         </el-row>
       </el-header>
       <el-container style="overflow: hidden;">
         <el-aside
-          v-bind:style="{'width' : sidebarCol / 24 * 100 + 'vw'}"
-          class="hidden-sm-and-down"
+          style="width: auto"
+          class="hidden-xs-only"
         >
           <div>
             <el-menu
@@ -80,14 +77,14 @@
     <el-dialog
       :title="isTeacher ? '密码修改':'个人信息修改'"
       :visible.sync="dialogFormVisible"
-      width="40%"
+      width="50%"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
       :show-close="false"
       :center="true"
     >
       <el-row type="flex" justify="center">
-        <el-col :span="24" :push="5">
+        <el-col :span="24" :push="2">
           <PerInfo ref="perinfo" v-if="!isTeacher"></PerInfo>
           <AdminPerInfo ref="perinfo" v-else></AdminPerInfo>
         </el-col>

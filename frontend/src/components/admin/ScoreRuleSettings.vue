@@ -15,9 +15,9 @@
         <el-button type="primary" @click="handleAdd">新增</el-button>
       </el-col>
     </el-row>
-    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="40%">
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="50%">
       <el-form
-        label-position="left"
+        label-position="right"
         label-width="10vw"
         size="small"
         :model="scoreRule"
@@ -49,6 +49,7 @@
             type="textarea"
             :autosize="{ minRows: 5, maxRows: 20 }"
             placeholder="若不清楚选项，请勿更改"
+            v-bind:style="{ width: elemWidth + 'vw' }"
             v-model="scoreRule.json"
           ></el-input>
         </el-form-item>
@@ -58,7 +59,7 @@
         <el-button type="primary" @click="handleSubmit">确 定</el-button>
       </span>
     </el-dialog>
-    <el-dialog title="提示" :visible.sync="confirmDialogVisible" width="30%">
+    <el-dialog title="提示" :visible.sync="confirmDialogVisible" width="50%">
       <span>删除操作不可恢复，请确认</span>
       <span slot="footer" class="dialog-footer">
         <el-button @click="cancelDelete">取 消</el-button>
@@ -73,7 +74,7 @@
 export default {
   data() {
     return {
-      elemWidth: 20,
+      elemWidth: 30,
       tableData: [],
       dialogVisible: false,
       dialogTitle: "",

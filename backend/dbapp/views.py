@@ -116,7 +116,14 @@ def getIpAddr(req):
     else:
         return req.META['REMOTE_ADDR']
 
-
+"""
+Example return data of this API
+{'name': 'nickname', 'fullname': 'realname', 
+'student_id': '', 'email': 'test@example.com', 
+'student_type': 'bachelor', 
+'research_lab': '', 
+'year': 2017, 'class_number': x, 'mobile': '', 'groups': ['']}
+"""
 def getStudentInfo(token):
     res = requests.get(
         'https://stu.cs.tsinghua.edu.cn/api/v2/userinfo?access_token=' + token)
@@ -165,7 +172,6 @@ def userlogin_stucs_cb(req):
                 result['message'] = '授权失败'
                 return JsonResponse(result)
             stu = stu['user']
-            print(stu)
             stu_info = {'username': stu['student_id'],
                         'name': stu['fullname'],
                         'mobile': stu['mobile'],
@@ -227,7 +233,6 @@ def userlogin(req):
 @check_login
 @csrf_exempt
 def getPersonalInfo(req):
-    print('getPersonalInfo')
     if(req.method == 'POST'):
         result = {'status': 1}
         try:

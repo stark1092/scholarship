@@ -96,6 +96,10 @@ const router = new Router({
     {
       path: '/userlogin_stucs_cb',
       component: StucsLogin
+    },
+    {
+      path: '*',
+      redirect: '/'
     }
   ]
 })

@@ -30,7 +30,7 @@
               type="primary"
               class="hidden-sm-and-down"
               @click="changePerInfo"
-            >修改信息</el-link>
+            >{{isTeacher ? '修改密码': '修改信息'}}</el-link>
           </el-col>
           <el-col :span="1">
             <el-link
@@ -43,7 +43,7 @@
           </el-col>
         </el-row>
       </el-header>
-      <el-container>
+      <el-container style="overflow: hidden;">
         <el-aside
           v-bind:style="{'width' : sidebarCol / 24 * 100 + 'vw'}"
           class="hidden-sm-and-down"
@@ -78,7 +78,7 @@
       </el-footer>
     </el-container>
     <el-dialog
-      title="个人信息修改"
+      :title="isTeacher ? '密码修改':'个人信息修改'"
       :visible.sync="dialogFormVisible"
       width="40%"
       :close-on-click-modal="false"
@@ -88,7 +88,8 @@
     >
       <el-row type="flex" justify="center">
         <el-col :span="24" :push="5">
-          <PerInfo ref="perinfo"></PerInfo>
+          <PerInfo ref="perinfo" v-if="!isTeacher"></PerInfo>
+          <AdminPerInfo ref="perinfo" v-else></AdminPerInfo>
         </el-col>
       </el-row>
       <div slot="footer" class="dialog-footer">
@@ -148,6 +149,7 @@ $color: #fff;
 /* eslint-disable */
 import "element-ui/lib/theme-chalk/display.css";
 import PerInfo from "./PersonalInfo";
+import AdminPerInfo from "./admin/AdminPersonalInfo"
 import {footer} from '../api/basicSettings';
 
 export default {
@@ -156,9 +158,16 @@ export default {
       defaultActive: "0",
       textFontSize: 14,
       sidebarCol: 2.5,
+      isTeacher: false,
       name: "",
-      sidebarItems: [
-        {
+      sidebarItems: [],
+      footerMsg: footer,
+      dialogFormVisible: false
+    };
+  },
+  created() {
+    if(!this.isTeacher) {
+      this.sidebarItems = [{
           link: "/home/notify",
           name: "通知",
           icon: "el-icon-message"
@@ -177,13 +186,19 @@ export default {
           link: "/home/apply_list",
           name: "申请列表",
           icon: "el-icon-tickets"
+        },]
+    } else {
+      this.sidebarItems = [{
+          link: "/home/notify",
+          name: "通知",
+          icon: "el-icon-message"
         },
-      ],
-      footerMsg: footer,
-      dialogFormVisible: false
-    };
-  },
-  created() {
+        {
+          link: "/home/apply_list",
+          name: "申请列表",
+          icon: "el-icon-tickets"
+        },]
+    }
     let foundItem = false;
     for (let idx in this.sidebarItems) {
       if (this.sidebarItems[idx].link === this.$route.path) {
@@ -235,7 +250,7 @@ export default {
       })
     }
   },
-  components: { PerInfo }
+  components: { PerInfo, AdminPerInfo }
 };
 </script>
 

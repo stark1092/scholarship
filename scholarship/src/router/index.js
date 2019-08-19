@@ -5,6 +5,9 @@ import ScholarshipMain from '@/components/ScholarshipMain'
 import ScholarshipAdminMain from '@/components/admin/ScholarshipAdminMain'
 import Notify from '@/components/Notify'
 import SendNotify from '@/components/admin/SendNotify'
+import ApplyInfoSettings from '@/components/admin/ApplyInfoSettings'
+import ScoreRuleSettings from '@/components/admin/ScoreRuleSettings'
+import MaterialSettings from '@/components/admin/MaterialSettings'
 import ApplyMain from '@/components/ApplyMain'
 import ApplyList from '@/components/ApplyList'
 import HelloWorld from '@/components/HelloWorld'
@@ -74,15 +77,15 @@ const router = new Router({
         },
         {
           path: 'apply_info_settings',
-          component: Notify
+          component: ApplyInfoSettings
         },
         {
           path: 'apply_score_rule_settings',
-          component: Notify
+          component: ScoreRuleSettings
         },
         {
           path: 'apply_material_settings',
-          component: Notify
+          component: MaterialSettings
         }
       ]
     },

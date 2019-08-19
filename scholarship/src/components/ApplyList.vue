@@ -1,42 +1,50 @@
 <template>
   <div>
     <el-form :inline="true" ref="filter_form" :model="filter" label-width="50px">
-        <el-form-item label="筛选">
-          <el-select v-model="filter.stu_type" placeholder>
-            <el-option
-              v-for="item in filter.stu_types"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            ></el-option>
-          </el-select>
-          </el-form-item>
-          <el-form-item>
-          <el-select v-model="filter.department" placeholder>
-            <el-option
-              v-for="item in filter.departments"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            ></el-option>
-          </el-select>
-          </el-form-item>
-          <el-form-item label="排序">
-          <el-select v-model="filter.ordering" placeholder>
-            <el-option
-              v-for="item in filter.ordering_list"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            ></el-option>
-          </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="submitFilter">确定</el-button>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="success" @click="exportList" v-if="isAdmin">导出为EXCEL</el-button>
-          </el-form-item>
+      <el-form-item label="筛选">
+        <el-select v-model="filter.scholarship_name" placeholder="请选择奖学金">
+          <el-option
+            v-for="item in filter.scholarship_names"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          ></el-option>
+        </el-select>
+        <el-select v-model="filter.stu_type" placeholder>
+          <el-option
+            v-for="item in filter.stu_types"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          ></el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-select v-model="filter.department" placeholder>
+          <el-option
+            v-for="item in filter.departments"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          ></el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="排序">
+        <el-select v-model="filter.ordering" placeholder>
+          <el-option
+            v-for="item in filter.ordering_list"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          ></el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="submitFilter">确定</el-button>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="success" @click="exportList" v-if="isAdmin">导出为EXCEL</el-button>
+      </el-form-item>
     </el-form>
     <el-row type="flex" justify="center">
       <el-col :span="24">
@@ -70,7 +78,7 @@ const numElemPerPage = 15;
 export default {
   data() {
     return {
-      isAdmin: false,  // TODO - set this according to user type
+      isAdmin: false, // TODO - set this according to user type
       numPages: 0,
       model: {
         tableColumn: [
@@ -156,9 +164,17 @@ export default {
           path: "/home/view_apply",
           query: { stu_num: link }
         });
-        window.open(route.href, '_blank');
+        window.open(route.href, "_blank");
       },
       filter: {
+        scholarship_name: "",
+        scholarship_names: [{
+          value: "s1",
+          label: "Scholarship 1"
+        },{
+          value: "s2",
+          label: "Scholarship 2"
+        }],
         stu_types: getRoughStudentTypeList(),
         stu_type: "",
         departments: getDepartmentList(),
@@ -178,14 +194,11 @@ export default {
           }
         ],
         ordering: ""
-      },
+      }
     };
   },
   components: { List },
-  created () {
-    this.fakeAddData();
-    this.numPages = Math.ceil(this.buffer.length / numElemPerPage);
-    this.handlePageChange(1);
+  created() {
     /*this.$http.get('get_all_applicants').then((response) => {
       let json = JSON.parse(response.bodyText);
       if(json.status == 0) {

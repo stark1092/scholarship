@@ -43,7 +43,7 @@
           </el-col>
         </el-row>
       </el-header>
-      <el-container>
+      <el-container el-container style="overflow: hidden;">
         <el-aside
           v-bind:style="{'width' : sidebarCol / 24 * 100 + 'vw'}"
           class="hidden-sm-and-down"
@@ -155,7 +155,7 @@ export default {
     return {
       defaultActive: "0",
       textFontSize: 14,
-      sidebarCol: 3,
+      sidebarCol: 3.2,
       name: "",
       sidebarItems: [
         {
@@ -177,7 +177,7 @@ export default {
           icon: "el-icon-setting"
         },{
           link: "/admin/apply_score_rule_settings",
-          name: "评分标准设置",
+          name: "评分规则设置",
           icon: "el-icon-coordinate"
         },{
           link: "/admin/apply_material_settings",

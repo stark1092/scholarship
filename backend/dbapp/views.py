@@ -272,10 +272,9 @@ def changePersonalInfo(req):
 def getNotify(req):
     if(req.method == 'POST'):
         result = {'status': 1}
-        testNotify()
+        #testNotify()
         try:
             data = json.loads(req.body)
-            result['status'] = 0
             notify = []
             notifies = models.Notify.objects.all()
             for each_notify in notifies:
@@ -283,12 +282,124 @@ def getNotify(req):
                             'date' : each_notify.date,
                             'link' : each_notify.link})
             result['data'] = notify
+            result['status'] = 0
             return JsonResponse(result)
         except Exception as e:
             print(e)
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
+@check_login
+@csrf_exempt
+def filterAndSort(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        testApplicant()
+        try:
+            data = json.loads(req.body)
+            filters = {}
+            print(data)
+            for key in data['data']:
+                if key != '' and key != 'scholarship_name' and key != 'ordering':
+                    filters[key] = data['data'][key]
+            if not filters:
+                students = models.User.objects.all()
+            else:
+                students = models.User.objects.filter(**filters)
+            if data['data']['scholarship_name'] == '':
+                 applicants = models.ApplyInfo.objects.filter(user_id__in = students)
+            else:
+                names = models.ApplyInfoSetting.objects.filter(scholarship_name = data['data']['scholarship_name'])
+                applicants = models.ApplyInfo.objects.filter(apply_info_id__in = names, user_id__in = students)
+            cnt = 0
+            upload_info = []
+            for applicant in applicants:
+                upload_info.append(json.loads(applicant.json))
+            if data['data']['ordering'] != '':
+                upload_info = sorted(upload_info, key = lambda score:score[data['data']['ordering']], reverse = True)
+            for seq in range(len(upload_info)):
+                upload_info[seq]['seq'] = str(seq)
+            result['applicant'] = upload_info
+            result['status'] = 0
+            print(result)
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+            return JsonResponse(result)
+#因为评分与json还没有很好的结合起来，因此暂时采用这种方法。以下代码为test
+
+def testApplicant():
+    models.User.objects.all().delete()
+    user = models.User(username = 'jzt',
+                        password = '123456',
+                        name = '金子童',
+                        student_id = 2015011739,
+                        user_type = 0,
+                        class_name = 'asdfg',
+                        gender = 'male',
+                        department = 'media',
+                        student_type = 'master',
+                        grade = '1',
+                        student_status = 'cst',
+                        political_status = 'party',
+                        ethnic_group = 'asdf',
+                        instructor = 'asdf',
+                        email = '123456@qq.com',
+                        mobile = '123432',
+                        address = 'asdfdas',
+                        post_code = '123456',
+                        is_project_started = False)
+    user.save()
+    models.ApplyMaterialSetting.objects.all().delete()
+    ms = models.ApplyMaterialSetting(
+        alias = 'example',
+        json = 'docx'
+    )
+    ms.save()
+    models.ApplyScoreRuleSetting.objects.all().delete()
+    rs = models.ApplyScoreRuleSetting(
+        alias = 'example',
+        json = '+1',
+        apply_material_id = ms
+    )
+    rs.save()
+    models.ApplyInfoSetting.objects.all().delete()
+    ais = models.ApplyInfoSetting(
+        scholarship_name = 's1',
+        apply_score_rule_id = rs,
+        apply_material_id = ms,
+        can_apply = True
+    )
+    ais.save()
+    models.ApplyInfo.objects.all().delete()
+    ai = models.ApplyInfo(
+        user_id = user,
+        json = '{"student_num": "123456",\
+                    "name": "金子童",\
+                    "a_paper": "1",\
+                    "b_paper": "2",\
+                    "c_paper": "3",\
+                    "o_paper": "4",\
+                    "patent": "0",\
+                    "academic_score": "5",\
+                    "work_score": "5",\
+                    "teacher_score": "5",\
+                    "tot_score": "10",\
+                    "num_report": "0",\
+                    "link": {\
+                        "link": "123456",\
+                        "label": "点击查看"\
+                    }\
+                }',
+        apply_info_id = ais,
+        apply_score_rule_id = rs,
+        apply_material_id = ms,
+        score = 100,
+        is_score_updated = True,
+        is_user_confirm = True
+    )
+    ai.save()
 
 def testNotify():
     models.Notify.objects.all().delete()

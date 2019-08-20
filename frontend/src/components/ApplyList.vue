@@ -2,7 +2,7 @@
   <div>
     <el-form :inline="true" ref="filter_form" :model="filter" label-width="50px">
       <el-form-item label="筛选">
-        <el-select v-model="filter.scholarship_name" placeholder="请选择奖学金">
+        <el-select v-model="filter.conditions.scholarship_name" placeholder="请选择奖学金">
           <el-option
             v-for="item in filter.scholarship_names"
             :key="item.value"
@@ -10,9 +10,9 @@
             :value="item.value"
           ></el-option>
         </el-select>
-        <el-select v-model="filter.stu_type" placeholder style="width: 5vw; min-width: 80px;">
+        <el-select v-model="filter.conditions.student_type" placeholder style="width: 5vw; min-width: 80px;">
           <el-option
-            v-for="item in filter.stu_types"
+            v-for="item in filter.student_types"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -20,7 +20,7 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-select v-model="filter.department" placeholder style="width: 8vw; min-width: 100px;">
+        <el-select v-model="filter.conditions.department" placeholder style="width: 8vw; min-width: 100px;">
           <el-option
             v-for="item in filter.departments"
             :key="item.value"
@@ -30,7 +30,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="排序">
-        <el-select v-model="filter.ordering" placeholder style="width: 7vw; min-width: 130px;">
+        <el-select v-model="filter.conditions.ordering" placeholder style="width: 7vw; min-width: 130px;">
           <el-option
             v-for="item in filter.ordering_list"
             :key="item.value"
@@ -167,7 +167,12 @@ export default {
         window.open(route.href, "_blank");
       },
       filter: {
-        scholarship_name: "",
+        conditions: {
+          scholarship_name: "",
+          student_type: "",
+          department: "",
+          ordering: ""
+        },
         scholarship_names: [{
           value: "s1",
           label: "Scholarship 1"
@@ -175,31 +180,30 @@ export default {
           value: "s2",
           label: "Scholarship 2"
         }],
-        stu_types: getRoughStudentTypeList(),
-        stu_type: "",
+        student_types: getRoughStudentTypeList(),
         departments: getDepartmentList(),
-        department: "",
         ordering_list: [
           {
-            value: "total",
+            value: "tot_score",
             label: "总分"
           },
           {
-            value: "academic",
+            value: "academic_score",
             label: "学术得分"
           },
           {
-            value: "work",
+            value: "work_score",
             label: "社工得分"
           }
         ],
-        ordering: ""
       }
     };
   },
   components: { List },
   created() {
-    /*this.$http.get('get_all_applicants').then((response) => {
+    /*
+    this.$http.post('getAllApplicants', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username})
+    .then(response => {
       let json = JSON.parse(response.bodyText);
       if(json.status == 0) {
         this.buffer = json.applicant;
@@ -208,7 +212,8 @@ export default {
       }
     }).catch(function(response){
       console.log('Error')
-    })*/
+    })
+    */
   },
   methods: {
     handlePageChange(val) {
@@ -245,7 +250,18 @@ export default {
       });
     },
     submitFilter() {
-      // submit filter to backend
+      this.$http.post('filterAndSort', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
+      'data': this.filter.conditions}).then(response => {
+        let json = JSON.parse(response.bodyText);
+        console.log(json)
+        if(json.status == 0) {
+          this.buffer = json.applicant;
+          this.numPages = Math.ceil(this.buffer.length / numElemPerPage);
+          this.handlePageChange(1);
+        }
+      }).catch(function(response){
+        console.log('Error')
+      })
     },
     exportList() {
       // submit filter to backend, and request generating excel file

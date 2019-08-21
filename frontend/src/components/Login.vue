@@ -63,7 +63,11 @@ export default {
               window.sessionStorage.username = res.username
               window.sessionStorage.name = res.name
               window.sessionStorage.user_type = res.user_type
-              this.$router.push({ path: '/home' });
+              if(res.user_type == 2) {
+                this.$router.push('/admin');
+              } else {
+                this.$router.push('/home');
+              }
             } else {
               alert(res.message)
             }

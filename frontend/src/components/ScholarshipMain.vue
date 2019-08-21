@@ -163,6 +163,7 @@ export default {
     };
   },
   created() {
+    this.isTeacher = window.sessionStorage.user_type == 1 ? true : false
     if(!this.isTeacher) {
       this.sidebarItems = [{
           link: "/home/notify",
@@ -230,6 +231,10 @@ export default {
       this.dialogFormVisible = true;
     },
     changePerInfoSubmit() {
+      if(this.isTeacher){
+        this.$refs['perinfo'].onSubmit()
+        return
+      }
       this.$http.post('changePersonalInfo', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
       'data': this.$refs['perinfo'].perinfo}).then(response => {
             let res = JSON.parse(response.bodyText)

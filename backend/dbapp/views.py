@@ -110,6 +110,28 @@ def check_admin(f):
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
+def check_admin_teacher(f):
+    @wraps(f)
+    def inner(req, *arg, **kwargs):
+        try:
+            data = json.loads(req.body)
+        except:
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+        try:
+            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
+                user = models.User.objects.get(username=data['username'])
+                if(user.user_type == 1 or user.user_type == 2):
+                    updateToken(data['token'])
+                    return f(req, *arg, **kwargs)
+                else:
+                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            else:
+                return JsonResponse({'status': -1, 'message': '用户未登录'})
+        except Exception as e:
+            print(e)
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+    return inner
+
 def getIpAddr(req):
     if 'HTTP_X_FORWARDED_FOR' in req.META.keys():
         return req.META['HTTP_X_FORWARDED_FOR']
@@ -410,3 +432,26 @@ def testNotify():
                     link = 'link' + str(i))
         notify.save()
     models.Notify.objects.filter(title='test2').delete()
+
+    @check_admin_teacher
+@csrf_exempt
+def changePassword(req):
+    '''Allow user to change the pwd
+    '''
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            user = models.User.objects.get(username=data['username'])
+            old_pwd = data['data']['old_pwd']
+            new_pwd = data['data']['new_pwd']
+            if user.password == old_pwd:
+                res = models.User.objects.filter(username=data['username']).update(password = new_pwd)
+                result['status'] = 0
+            else:
+                result['message'] = '密码错误'
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+            return JsonResponse(result)

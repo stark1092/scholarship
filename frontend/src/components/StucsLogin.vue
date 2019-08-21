@@ -12,6 +12,7 @@ export default {
                 window.sessionStorage.token = res.token
                 window.sessionStorage.username = res.username
                 window.sessionStorage.name = res.name
+                window.sessionStorage.user_type = res.user_type
                 this.$router.push({ path: '/home' })
             } else {
                 alert(res.message)

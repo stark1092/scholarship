@@ -221,8 +221,9 @@ def userlogin(req):
                 models.LogAction('login', user, getIpAddr(req))
                 result['token'] = createToken(user.username)
                 result['user_type'] = user.user_type
-                result['name'] = user.name
                 result['status'] = 0
+                result['name'] = user.name
+                result['username'] = user.username
                 return JsonResponse(result)
         except Exception as e:
             print(e)

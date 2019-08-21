@@ -32,6 +32,7 @@
 
 <script>
 /* eslint-disable */
+let md5 = require('js-md5');
 export default {
   created() {},
   props: {
@@ -42,10 +43,25 @@ export default {
   },
   methods: {
       onSubmit() {
-          return {
-              old_pwd: this.perinfo.old_pwd,
-              new_pwd: this.perinfo.new_pwd
+          var password = {
+              old_pwd: md5(this.perinfo.old_pwd),
+              new_pwd: md5(this.perinfo.new_pwd)
           }
+          this.$http.post('changePassword', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
+          'data': password}).then(response => {
+                let res = JSON.parse(response.bodyText)
+                if(res.status === 0) {
+                  alert('修改成功')
+                  this.$router.go(0)
+                } else {
+                  if(res.status === -1) {
+                    this.$router.push('/')
+                  }
+                  alert(res.message)
+                }
+              }).catch(function(response) {
+                console.log('Error')
+          })
       },
       isValid() {
           return valid

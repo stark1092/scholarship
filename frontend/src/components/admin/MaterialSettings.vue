@@ -80,23 +80,33 @@ export default {
     load() {
       this.tableData = [];
       let that = this;
-      this.$http.post('getMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username
-        }).then(response => {
+      this.$http
+        .post("getMaterial", {
+          token: window.sessionStorage.token,
+          username: window.sessionStorage.username
+        })
+        .then(response => {
           let json = JSON.parse(response.bodyText);
-          // console.log(json)
-          if(json.status == 0) {
+          //console.log(json)
+          if (json.status == 0) {
             let arr = JSON.parse(json.data);
             // console.log(arr);
             arr.forEach(element => {
               let data = element.fields;
-              data['pk'] = element.pk;
-              data['set_time'] = (new Date(data['set_time'])).toLocaleString();
+              data["pk"] = element.pk;
+              data["set_time"] = new Date(data["set_time"]).toLocaleString();
               that.tableData.push(data);
             });
+          } else {
+            alert(json.message);
+            if(json.status === -1) {
+              this.$router.push('/');
+            }
           }
-        }).catch(function(response){
+        })
+        .catch(function(response) {
           console.log(response);
-          console.log('Error');
+          console.log("Error");
         });
     },
     handleAdd() {
@@ -108,16 +118,29 @@ export default {
       this.dialogVisible = true;
       let that = this;
       this.addCallback = () => {
-        this.$http.post('addMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username,
-          'data': this.materialRule}).then(response => {
+        this.$http
+          .post("addMaterial", {
+            token: window.sessionStorage.token,
+            username: window.sessionStorage.username,
+            data: this.materialRule
+          })
+          .then(response => {
             let json = JSON.parse(response.bodyText);
             console.log(json);
-            this.dialogVisible = false;
-            that.load();
-          }).catch(function(response){
-            console.log('Error');
+            if(json.status === 0) {
+              this.dialogVisible = false;
+              that.load();
+            } else {
+              if(json.status === -1) {
+                this.$router.push('/');
+              }
+              alert(json.message);
+            }
+          })
+          .catch(function(response) {
+            console.log("Error");
           });
-      }
+      };
     },
     handleSubmit() {
       this.editing = {};
@@ -133,16 +156,29 @@ export default {
     handleDelete(idx, row) {
       let that = this;
       this.deleteCallback = () => {
-        console.log(that.tableData[idx]['pk']);
-        this.$http.post('delMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username,
-          'data': this.tableData[idx]['pk']}).then(response => {
+        console.log(that.tableData[idx]["pk"]);
+        this.$http
+          .post("delMaterial", {
+            token: window.sessionStorage.token,
+            username: window.sessionStorage.username,
+            data: this.tableData[idx]["pk"]
+          })
+          .then(response => {
             let json = JSON.parse(response.bodyText);
             console.log(json);
-            this.dialogVisible = false;
-            that.tableData.splice(idx, 1);
-          }).catch(function(response){
-            console.log('Error');
-          }); 
+            if(json.status === 0) {
+              this.dialogVisible = false;
+              that.tableData.splice(idx, 1);
+            } else {
+              alert(json.message);
+              if(json.status === -1) {
+                this.$router.push('/');
+              }
+            }
+          })
+          .catch(function(response) {
+            console.log("Error");
+          });
       };
       this.confirmDialogVisible = true;
     },
@@ -155,25 +191,37 @@ export default {
       let that = this;
       this.editCallback = () => {
         let data = this.materialRule;
-        data['pk'] = this.tableData[idx]['pk'];
-        this.$http.post('editMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username,
-          'data': data}).then(response => {
+        data["pk"] = this.tableData[idx]["pk"];
+        this.$http
+          .post("editMaterial", {
+            token: window.sessionStorage.token,
+            username: window.sessionStorage.username,
+            data: data
+          })
+          .then(response => {
             let json = JSON.parse(response.bodyText);
             console.log(json);
-            this.dialogVisible = false;
-            that.load();
-          }).catch(function(response){
-            console.log('Error');
+            if(json.status === 0) {
+              this.dialogVisible = false;
+              that.load();
+            } else {
+              alert(json.message);
+              if(json.status === -1) {
+                this.$router.push('/');
+              }
+            }
+          })
+          .catch(function(response) {
+            console.log("Error");
           });
-      }
+      };
     },
     cancelDelete() {
       this.deleteCallback = null;
       this.confirmDialogVisible = false;
     },
     confirmDelete() {
-      if(this.deleteCallback)
-        this.deleteCallback();
+      if (this.deleteCallback) this.deleteCallback();
       this.confirmDialogVisible = false;
     }
   }

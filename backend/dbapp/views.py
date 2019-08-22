@@ -461,18 +461,11 @@ def changePassword(req):
 @check_admin
 @csrf_exempt
 def addMaterial(req):
-    print(req.method)
     if(req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            print(data)
-            user = models.User.objects.get(username=data['username'])
-            if(user.user_type != 2):
-                result['message'] = '添加失败，权限不足'
-                return JsonResponse(result)
             data = data['data']
-            print(data)
             ms = models.ApplyMaterialSetting(
                 alias = data['alias'],
                 json = data['json']
@@ -482,7 +475,7 @@ def addMaterial(req):
             return JsonResponse(result)
         except Exception as e:
             print(e)
-            result['message'] = '设置失败'
+            result['message'] = '操作失败'
             return JsonResponse(result)
 
 @check_admin
@@ -492,17 +485,12 @@ def getMaterial(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            print(data)
-            user = models.User.objects.get(username=data['username'])
-            if(user.user_type != 2):
-                result['message'] = '添加失败，权限不足'
-                return JsonResponse(result)
             result['status'] = 0
             result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all())
             return JsonResponse(result)
         except Exception as e:
             print(e)
-            result['message'] = '设置失败'
+            result['message'] = '操作失败'
             return JsonResponse(result)
 
 @check_admin
@@ -512,18 +500,12 @@ def delMaterial(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            print(data)
-            user = models.User.objects.get(username=data['username'])
-            if(user.user_type != 2):
-                result['message'] = '添加失败，权限不足'
-                return JsonResponse(result)
-            result['status'] = 0
             models.ApplyMaterialSetting.objects.filter(apply_material_id=data['data']).delete()
-            print(result)
+            result['status'] = 0
             return JsonResponse(result)
         except Exception as e:
             print(e)
-            result['message'] = '设置失败'
+            result['message'] = '操作失败'
             return JsonResponse(result)
 
 @check_admin
@@ -533,18 +515,15 @@ def editMaterial(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            print(data)
-            user = models.User.objects.get(username=data['username'])
-            if(user.user_type != 2):
-                result['message'] = '添加失败，权限不足'
-                return JsonResponse(result)
-            result['status'] = 0
             data = data['data']
-            models.ApplyMaterialSetting.objects.filter(apply_material_id=data['pk']).update(alias=data['alias'],json=data['json'])
-            print(result)
+            model = models.ApplyMaterialSetting.objects.get(apply_material_id=data['pk'])
+            model.alias=data['alias']
+            model.json=data['json']
+            model.save(force_update=True)
+            result['status'] = 0
             return JsonResponse(result)
         except Exception as e:
             print(e)
-            result['message'] = '设置失败'
+            result['message'] = '操作失败'
             return JsonResponse(result)
 

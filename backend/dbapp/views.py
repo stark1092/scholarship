@@ -457,3 +457,94 @@ def changePassword(req):
             print(e)
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def addMaterial(req):
+    print(req.method)
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            print(data)
+            user = models.User.objects.get(username=data['username'])
+            if(user.user_type != 2):
+                result['message'] = '添加失败，权限不足'
+                return JsonResponse(result)
+            data = data['data']
+            print(data)
+            ms = models.ApplyMaterialSetting(
+                alias = data['alias'],
+                json = data['json']
+            )
+            ms.save()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '设置失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def getMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            print(data)
+            user = models.User.objects.get(username=data['username'])
+            if(user.user_type != 2):
+                result['message'] = '添加失败，权限不足'
+                return JsonResponse(result)
+            result['status'] = 0
+            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all())
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '设置失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def delMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            print(data)
+            user = models.User.objects.get(username=data['username'])
+            if(user.user_type != 2):
+                result['message'] = '添加失败，权限不足'
+                return JsonResponse(result)
+            result['status'] = 0
+            models.ApplyMaterialSetting.objects.filter(apply_material_id=data['data']).delete()
+            print(result)
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '设置失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def editMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            print(data)
+            user = models.User.objects.get(username=data['username'])
+            if(user.user_type != 2):
+                result['message'] = '添加失败，权限不足'
+                return JsonResponse(result)
+            result['status'] = 0
+            data = data['data']
+            models.ApplyMaterialSetting.objects.filter(apply_material_id=data['pk']).update(alias=data['alias'],json=data['json'])
+            print(result)
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '设置失败'
+            return JsonResponse(result)
+

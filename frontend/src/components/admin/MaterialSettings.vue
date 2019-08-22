@@ -2,7 +2,7 @@
   <div>
     <el-table :data="tableData">
       <el-table-column prop="alias" label="规则名称" width="180"></el-table-column>
-      <el-table-column prop="set_date" label="设置时间" width="180"></el-table-column>
+      <el-table-column prop="set_time" label="设置时间" width="180"></el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-button @click="handleEdit(scope.$index, scope.row)" type="text" size="small">编辑</el-button>
@@ -74,18 +74,31 @@ export default {
     };
   },
   created() {
-    this.tableData.push(
-      {
-        alias: "name",
-        set_date: "date"
-      },
-      {
-        alias: "name2",
-        set_date: "date2"
-      }
-    );
+    this.load();
   },
   methods: {
+    load() {
+      this.tableData = [];
+      let that = this;
+      this.$http.post('getMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username
+        }).then(response => {
+          let json = JSON.parse(response.bodyText);
+          // console.log(json)
+          if(json.status == 0) {
+            let arr = JSON.parse(json.data);
+            // console.log(arr);
+            arr.forEach(element => {
+              let data = element.fields;
+              data['pk'] = element.pk;
+              data['set_time'] = (new Date(data['set_time'])).toLocaleString();
+              that.tableData.push(data);
+            });
+          }
+        }).catch(function(response){
+          console.log(response);
+          console.log('Error');
+        });
+    },
     handleAdd() {
       this.materialRule = {
         alias: "",
@@ -93,14 +106,43 @@ export default {
       };
       this.dialogTitle = "添加规则";
       this.dialogVisible = true;
+      let that = this;
+      this.addCallback = () => {
+        this.$http.post('addMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username,
+          'data': this.materialRule}).then(response => {
+            let json = JSON.parse(response.bodyText);
+            console.log(json);
+            this.dialogVisible = false;
+            that.load();
+          }).catch(function(response){
+            console.log('Error');
+          });
+      }
     },
     handleSubmit() {
       this.editing = {};
+      if (this.addCallback) {
+        this.addCallback();
+        this.addCallback = null;
+      }
+      if (this.editCallback) {
+        this.editCallback();
+        this.editCallback = null;
+      }
     },
     handleDelete(idx, row) {
       let that = this;
       this.deleteCallback = () => {
-        that.tableData.splice(idx, 1);
+        console.log(that.tableData[idx]['pk']);
+        this.$http.post('delMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username,
+          'data': this.tableData[idx]['pk']}).then(response => {
+            let json = JSON.parse(response.bodyText);
+            console.log(json);
+            this.dialogVisible = false;
+            that.tableData.splice(idx, 1);
+          }).catch(function(response){
+            console.log('Error');
+          }); 
       };
       this.confirmDialogVisible = true;
     },
@@ -108,6 +150,22 @@ export default {
       this.editing = row;
       this.dialogTitle = "编辑规则" + row.alias;
       this.dialogVisible = true;
+      this.materialRule.alias = this.tableData[idx].alias;
+      this.materialRule.json = this.tableData[idx].json;
+      let that = this;
+      this.editCallback = () => {
+        let data = this.materialRule;
+        data['pk'] = this.tableData[idx]['pk'];
+        this.$http.post('editMaterial', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username,
+          'data': data}).then(response => {
+            let json = JSON.parse(response.bodyText);
+            console.log(json);
+            this.dialogVisible = false;
+            that.load();
+          }).catch(function(response){
+            console.log('Error');
+          });
+      }
     },
     cancelDelete() {
       this.deleteCallback = null;

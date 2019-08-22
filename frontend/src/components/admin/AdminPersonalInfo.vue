@@ -1,5 +1,5 @@
 <template>
-  <el-form label-position="left" label-width="13vw" size="small" :model="perinfo" status-icon :rules="rule">
+  <el-form label-position="left" label-width="13vw" size="small" :model="perinfo" status-icon :rules="rule" ref="form">
     <el-form-item label="原密码" prop="old_pwd">
       <el-input
         v-model="perinfo.old_pwd"
@@ -63,9 +63,6 @@ export default {
                 console.log('Error')
           })
       },
-      isValid() {
-          return valid
-      }
   },
   data() {
     var validatePass2 = (rule, value, callback) => {
@@ -74,13 +71,11 @@ export default {
       } else if (value !== this.perinfo.new_pwd) {
         callback(new Error("两次输入密码不一致!"));
       } else {
-        this.valid = this.old_pwd !== "" && this.new_pwd !== "";
         callback();
       }
     };
     var validatorCommon = (rule, val, cb) => {
         if(val === "") {
-            this.valid = false;
             cb(new Error("密码不能为空"));
         } else {
             cb();
@@ -92,7 +87,6 @@ export default {
         new_pwd: "",
         new_pwd_confirm: ""
       },
-      valid: false,
       elemWidth: 25,
       rule: {
         old_pwd: [

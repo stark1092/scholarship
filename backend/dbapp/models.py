@@ -65,7 +65,7 @@ class User(models.Model):
     mobile = models.CharField(max_length=30)
     address = models.CharField(max_length=200)
     post_code = models.CharField(max_length=20)
-    is_project_started = models.BooleanField()
+    is_project_started = models.BooleanField(default=False)
     ## self-maintained info
     register_date = models.DateTimeField(auto_now_add=True)
     last_modify = models.DateTimeField(auto_now=True)    
@@ -137,7 +137,7 @@ class ApplyInfo(models.Model):
     is_user_confirm = models.BooleanField(default=False)  ### If user saves temporarily, this field will be False
 
 class TeacherScore(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    apply_id = models.ForeignKey(ApplyInfo, on_delete=models.CASCADE)
     teacher_id = models.IntegerField(db_index=True, null=False, default=0)
     score = models.IntegerField(null=False, default=0)
 

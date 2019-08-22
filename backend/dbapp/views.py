@@ -227,9 +227,8 @@ def userlogin(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            print(data)
             user = models.User.objects.get(username=data['username'])
-            if(user.user_type == 0):
+            if(user.user_type == 0 or user.password == ""):
                 result['message'] = '登录失败，该用户禁止使用密码登录'
                 models.LogAction('login_failure', user, getIpAddr(
                     req), 'User is not allowed to login via password')
@@ -352,6 +351,7 @@ def filterAndSort(req):
             return JsonResponse(result)
 #因为评分与json还没有很好的结合起来，因此暂时采用这种方法。以下代码为test
 
+## TODO - remove test codes later
 def testApplicant():
     models.User.objects.all().delete()
     user = models.User(username = 'jzt',
@@ -433,7 +433,7 @@ def testNotify():
         notify.save()
     models.Notify.objects.filter(title='test2').delete()
 
-    @check_admin_teacher
+@check_admin_teacher
 @csrf_exempt
 def changePassword(req):
     '''Allow user to change the pwd
@@ -446,7 +446,9 @@ def changePassword(req):
             old_pwd = data['data']['old_pwd']
             new_pwd = data['data']['new_pwd']
             if user.password == old_pwd:
-                res = models.User.objects.filter(username=data['username']).update(password = new_pwd)
+                user.password = new_pwd
+                user.save()
+                models.LogAction('changePassword', user, getIpAddr(req))
                 result['status'] = 0
             else:
                 result['message'] = '密码错误'

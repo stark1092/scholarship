@@ -224,7 +224,7 @@ const getApplyMainSettings = function () {
                                 },
                                 {
                                     label: "Short paper",
-                                    value: "Short"
+                                    value: "short"
                                 },
                                 {
                                     label: "Poster",
@@ -380,7 +380,7 @@ const getApplyMainSettings = function () {
                                 },
                                 {
                                     label: "Short paper",
-                                    value: "Short"
+                                    value: "short"
                                 },
                                 {
                                     label: "Poster",

@@ -195,10 +195,17 @@ export default {
         if (res.status === 0) {
           this.perinfo = res.data;
         } else {
-          if (res.status === -1) {
-            this.$router.push("/");
-          }
-          alert(res.message);
+          let that = this;
+          swal({
+            title: "出错了",
+            text: res.message,
+            icon: "error",
+            button: "确定"
+          }).then(val => {
+            if (res.status === -1) {
+              that.$router.push("/");
+            }
+          });
         }
       })
       .catch(function(response) {

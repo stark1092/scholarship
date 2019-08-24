@@ -69,7 +69,7 @@ export default {
                 this.$router.push('/home');
               }
             } else {
-              alert(res.message)
+              swal({title:"出错了",text:res.message,icon:"error",button:"确定"});
             }
           }).catch(function(response) {
             console.log('Error')
@@ -87,7 +87,7 @@ export default {
         if(json.status === 0) {
           window.location = json.url
         } else {
-          alert(result.message)
+          swal({title:"出错了",text:json.message,icon:"error",button:"确定"});
         }
       }).catch(function(response){
         console.log('Error')

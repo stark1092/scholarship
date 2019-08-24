@@ -20,7 +20,9 @@
           </el-col>
           <el-col
             v-bind:style="{ 'font-size': textFontSize + 'px'}"
-            :xs="3" :sm="4" :md="2"
+            :xs="3"
+            :sm="4"
+            :md="2"
           >你好, {{ name }}</el-col>
           <el-col :xs="3" :sm="3" :md="2">
             <el-link
@@ -41,10 +43,7 @@
         </el-row>
       </el-header>
       <el-container style="overflow: hidden;">
-        <el-aside
-          style="width: auto"
-          class="hidden-xs-only"
-        >
+        <el-aside style="width: auto" class="hidden-xs-only">
           <div>
             <el-menu
               :class="'menu'"
@@ -146,8 +145,8 @@ $color: #fff;
 /* eslint-disable */
 import "element-ui/lib/theme-chalk/display.css";
 import PerInfo from "./PersonalInfo";
-import AdminPerInfo from "./admin/AdminPersonalInfo"
-import {footer} from '../api/basicSettings';
+import AdminPerInfo from "./admin/AdminPersonalInfo";
+import { footer } from "../api/basicSettings";
 
 export default {
   data() {
@@ -163,9 +162,10 @@ export default {
     };
   },
   created() {
-    this.isTeacher = window.sessionStorage.user_type == 1 ? true : false
-    if(!this.isTeacher) {
-      this.sidebarItems = [{
+    this.isTeacher = window.sessionStorage.user_type == 1 ? true : false;
+    if (!this.isTeacher) {
+      this.sidebarItems = [
+        {
           link: "/home/notify",
           name: "通知",
           icon: "el-icon-message"
@@ -184,9 +184,11 @@ export default {
           link: "/home/apply_list",
           name: "申请列表",
           icon: "el-icon-tickets"
-        },]
+        }
+      ];
     } else {
-      this.sidebarItems = [{
+      this.sidebarItems = [
+        {
           link: "/home/notify",
           name: "通知",
           icon: "el-icon-message"
@@ -195,7 +197,8 @@ export default {
           link: "/home/apply_list",
           name: "申请列表",
           icon: "el-icon-tickets"
-        },]
+        }
+      ];
     }
     let foundItem = false;
     for (let idx in this.sidebarItems) {
@@ -208,7 +211,10 @@ export default {
     if (!foundItem) {
       this.$router.push(this.sidebarItems[0].link);
     }
-    if(window.sessionStorage.token != null && window.sessionStorage.name != null)
+    if (
+      window.sessionStorage.token != null &&
+      window.sessionStorage.name != null
+    )
       this.name = window.sessionStorage.name;
   },
   methods: {
@@ -224,32 +230,47 @@ export default {
       }
     },
     exitLogin() {
-      window.sessionStorage.clear()
-      this.$router.push('/')
+      window.sessionStorage.clear();
+      this.$router.push("/");
     },
     changePerInfo() {
       this.dialogFormVisible = true;
     },
     changePerInfoSubmit() {
-      if(this.isTeacher){
-        this.$refs['perinfo'].onSubmit()
-        return
+      if (this.isTeacher) {
+        this.$refs["perinfo"].onSubmit();
+        return;
       }
-      this.$http.post('changePersonalInfo', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
-      'data': this.$refs['perinfo'].perinfo}).then(response => {
-            let res = JSON.parse(response.bodyText)
-            if(res.status === 0) {
-              alert('修改成功')
-              this.$router.go(0)
-            } else {
-              if(res.status === -1) {
-                this.$router.push('/')
+      this.$http
+        .post("changePersonalInfo", {
+          token: window.sessionStorage.token,
+          username: window.sessionStorage.username,
+          data: this.$refs["perinfo"].perinfo
+        })
+        .then(response => {
+          let res = JSON.parse(response.bodyText);
+          if (res.status === 0) {
+            let that = this;
+            swal({ title: "修改成功", icon: "success", button: "确定" }).then(
+              val => that.$router.go(0)
+            );
+          } else {
+            let that = this;
+            swal({
+              title: "出错了",
+              text: res.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (res.status === -1) {
+                that.$router.push("/");
               }
-              alert(res.message)
-            }
-          }).catch(function(response) {
-            console.log('Error')
-      })
+            });
+          }
+        })
+        .catch(function(response) {
+          console.log("Error");
+        });
     }
   },
   components: { PerInfo, AdminPerInfo }

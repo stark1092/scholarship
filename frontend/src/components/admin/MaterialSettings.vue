@@ -98,10 +98,17 @@ export default {
               that.tableData.push(data);
             });
           } else {
-            alert(json.message);
-            if(json.status === -1) {
-              this.$router.push('/');
-            }
+            let that = this;
+            swal({
+              title: "出错了",
+              text: json.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (json.status === -1) {
+                that.$router.push("/");
+              }
+            });
           }
         })
         .catch(function(response) {
@@ -127,14 +134,21 @@ export default {
           .then(response => {
             let json = JSON.parse(response.bodyText);
             console.log(json);
-            if(json.status === 0) {
+            if (json.status === 0) {
               this.dialogVisible = false;
               that.load();
             } else {
-              if(json.status === -1) {
-                this.$router.push('/');
-              }
-              alert(json.message);
+              let that = this;
+              swal({
+                title: "出错了",
+                text: json.message,
+                icon: "error",
+                button: "确定"
+              }).then(val => {
+                if (json.status === -1) {
+                  that.$router.push("/");
+                }
+              });
             }
           })
           .catch(function(response) {
@@ -166,14 +180,21 @@ export default {
           .then(response => {
             let json = JSON.parse(response.bodyText);
             console.log(json);
-            if(json.status === 0) {
+            if (json.status === 0) {
               this.dialogVisible = false;
               that.tableData.splice(idx, 1);
             } else {
-              alert(json.message);
-              if(json.status === -1) {
-                this.$router.push('/');
-              }
+              let that = this;
+              swal({
+                title: "出错了",
+                text: json.message,
+                icon: "error",
+                button: "确定"
+              }).then(val => {
+                if (json.status === -1) {
+                  that.$router.push("/");
+                }
+              });
             }
           })
           .catch(function(response) {
@@ -201,14 +222,21 @@ export default {
           .then(response => {
             let json = JSON.parse(response.bodyText);
             console.log(json);
-            if(json.status === 0) {
+            if (json.status === 0) {
               this.dialogVisible = false;
               that.load();
             } else {
-              alert(json.message);
-              if(json.status === -1) {
-                this.$router.push('/');
-              }
+              let that = this;
+              swal({
+                title: "出错了",
+                text: json.message,
+                icon: "error",
+                button: "确定"
+              }).then(val => {
+                if (json.status === -1) {
+                  that.$router.push("/");
+                }
+              });
             }
           })
           .catch(function(response) {

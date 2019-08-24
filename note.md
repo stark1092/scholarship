@@ -9,7 +9,7 @@ There are three kinds of users, marked with different user_type fields: 0 for st
 
 Always use **POST** request, and the post data is as follows. Note here I didn't use strict JSON grammar in order to sneak some comments in.
 
-```json
+```js
 {
     token: 'user_token_in_session_storage', // can be obtained through window.sessionStorage.token REQUIRED
     username: 'username_in_session_storage', // window.sessionStorage.username REQUIRED
@@ -19,7 +19,7 @@ Always use **POST** request, and the post data is as follows. Note here I didn't
 
 ### Server->Client
 
-```JSON
+```JS
 {
     status: 0, // status code, REQUIRED. 0: no error; -1: user not login; >0: server error
     message: 'error_msg', // only useful when status code > 0, OPTIONAL. Messages are in Chinese, and can be displayed directly on client side through `alert(res.message)`

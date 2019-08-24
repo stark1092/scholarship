@@ -25,5 +25,10 @@ urlpatterns = [
     path('getPersonalInfo', views.getPersonalInfo),
     path('changePersonalInfo', views.changePersonalInfo),
     path('getNotify', views.getNotify),
-    path('filterAndSort', views.filterAndSort)
+    path('filterAndSort', views.filterAndSort),
+    path('changePassword', views.changePassword),
+    path('addMaterial', views.addMaterial),
+    path('getMaterial', views.getMaterial),
+    path('delMaterial', views.delMaterial),
+    path('editMaterial', views.editMaterial)
 ]

@@ -20,7 +20,9 @@
           </el-col>
           <el-col
             v-bind:style="{ 'font-size': textFontSize + 'px'}"
-            :xs="3" :sm="4" :md="2"
+            :xs="3"
+            :sm="4"
+            :md="2"
           >你好, {{ name }}</el-col>
           <el-col :xs="3" :sm="3" :md="2">
             <el-link
@@ -41,10 +43,7 @@
         </el-row>
       </el-header>
       <el-container el-container style="overflow: hidden;">
-        <el-aside
-          style="width: auto"
-          class="hidden-xs-only"
-        >
+        <el-aside style="width: auto" class="hidden-xs-only">
           <div>
             <el-menu
               :class="'menu'"
@@ -163,19 +162,23 @@ export default {
           link: "/admin/apply_list",
           name: "申请列表",
           icon: "el-icon-tickets"
-        },{
+        },
+        {
           link: "/admin/notify",
           name: "发送通知",
           icon: "el-icon-upload2"
-        },{
+        },
+        {
           link: "/admin/apply_info_settings",
           name: "奖学金申请设置",
           icon: "el-icon-setting"
-        },{
+        },
+        {
           link: "/admin/apply_score_rule_settings",
           name: "评分规则设置",
           icon: "el-icon-coordinate"
-        },{
+        },
+        {
           link: "/admin/apply_material_settings",
           name: "提交材料设置",
           icon: "el-icon-files"
@@ -223,10 +226,13 @@ export default {
       this.dialogFormVisible = true;
     },
     changePerInfoSubmit() {
-      if (this.$refs["perinfo"].valid) {
-        this.dialogFormVisible = false;
-        console.log(this.$refs['perinfo'].onSubmit())
-        /*this.$http.post('changeAdminPersonalInfo', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
+      this.$refs["perinfo"].$refs["form"].validate(valid => {
+        if(valid) {
+          this.dialogFormVisible = false;
+          console.log(this.$refs["perinfo"].onSubmit());
+        }
+      });
+      /*this.$http.post('changeAdminPersonalInfo', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
       'data': this.$refs['perinfo'].perinfo}).then(response => {
             let res = JSON.parse(response.bodyText)
             if(res.status === 0) {
@@ -241,7 +247,6 @@ export default {
           }).catch(function(response) {
             console.log('Error')
       })*/
-      }
     }
   },
   components: { PerInfo }

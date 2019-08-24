@@ -110,6 +110,28 @@ def check_admin(f):
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
+def check_admin_teacher(f):
+    @wraps(f)
+    def inner(req, *arg, **kwargs):
+        try:
+            data = json.loads(req.body)
+        except:
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+        try:
+            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
+                user = models.User.objects.get(username=data['username'])
+                if(user.user_type == 1 or user.user_type == 2):
+                    updateToken(data['token'])
+                    return f(req, *arg, **kwargs)
+                else:
+                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            else:
+                return JsonResponse({'status': -1, 'message': '用户未登录'})
+        except Exception as e:
+            print(e)
+            return JsonResponse({'status': -1, 'message': '非法请求'})
+    return inner
+
 def getIpAddr(req):
     if 'HTTP_X_FORWARDED_FOR' in req.META.keys():
         return req.META['HTTP_X_FORWARDED_FOR']
@@ -205,9 +227,8 @@ def userlogin(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            print(data)
             user = models.User.objects.get(username=data['username'])
-            if(user.user_type == 0):
+            if(user.user_type == 0 or user.password == ""):
                 result['message'] = '登录失败，该用户禁止使用密码登录'
                 models.LogAction('login_failure', user, getIpAddr(
                     req), 'User is not allowed to login via password')
@@ -221,8 +242,9 @@ def userlogin(req):
                 models.LogAction('login', user, getIpAddr(req))
                 result['token'] = createToken(user.username)
                 result['user_type'] = user.user_type
-                result['name'] = user.name
                 result['status'] = 0
+                result['name'] = user.name
+                result['username'] = user.username
                 return JsonResponse(result)
         except Exception as e:
             print(e)
@@ -329,6 +351,7 @@ def filterAndSort(req):
             return JsonResponse(result)
 #因为评分与json还没有很好的结合起来，因此暂时采用这种方法。以下代码为test
 
+## TODO - remove test codes later
 def testApplicant():
     models.User.objects.all().delete()
     user = models.User(username = 'jzt',
@@ -409,3 +432,98 @@ def testNotify():
                     link = 'link' + str(i))
         notify.save()
     models.Notify.objects.filter(title='test2').delete()
+
+@check_admin_teacher
+@csrf_exempt
+def changePassword(req):
+    '''Allow user to change the pwd
+    '''
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            user = models.User.objects.get(username=data['username'])
+            old_pwd = data['data']['old_pwd']
+            new_pwd = data['data']['new_pwd']
+            if user.password == old_pwd:
+                user.password = new_pwd
+                user.save()
+                models.LogAction('changePassword', user, getIpAddr(req))
+                result['status'] = 0
+            else:
+                result['message'] = '密码错误'
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def addMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ms = models.ApplyMaterialSetting(
+                alias = data['alias'],
+                json = data['json']
+            )
+            ms.save()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def getMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['status'] = 0
+            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all())
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def delMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.ApplyMaterialSetting.objects.filter(apply_material_id=data['data']).delete()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def editMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            model = models.ApplyMaterialSetting.objects.get(apply_material_id=data['pk'])
+            model.alias=data['alias']
+            model.json=data['json']
+            model.save(force_update=True)
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+

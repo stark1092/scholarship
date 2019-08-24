@@ -45,7 +45,7 @@ class User(models.Model):
     )
     ## basic user info
     user_id = models.AutoField(primary_key=True)
-    username = models.CharField(db_index=True, max_length=100)
+    username = models.CharField(db_index=True, max_length=100, unique=True)
     password = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     student_id = models.CharField(db_index=True, max_length=30)
@@ -65,7 +65,7 @@ class User(models.Model):
     mobile = models.CharField(max_length=30)
     address = models.CharField(max_length=200)
     post_code = models.CharField(max_length=20)
-    is_project_started = models.BooleanField()
+    is_project_started = models.BooleanField(default=False)
     ## self-maintained info
     register_date = models.DateTimeField(auto_now_add=True)
     last_modify = models.DateTimeField(auto_now=True)    
@@ -91,13 +91,13 @@ Apply Material <- Score Rule <- Apply Info
 """
 class ApplyMaterialSetting(models.Model):
     apply_material_id = models.AutoField(primary_key=True)
-    alias = models.CharField(db_index=True, max_length=500)       ### alias for a rule, e.g. 计算机系奖学金申请材料模板
+    alias = models.CharField(db_index=True, max_length=200, unique=True)       ### alias for a rule, e.g. 计算机系奖学金申请材料模板
     json = models.TextField()  ### json settings for frontend, @see template data in corresponding js file
     set_time = models.DateTimeField(auto_now_add=True)
 
 class ApplyScoreRuleSetting(models.Model):
     apply_score_rule_id = models.AutoField(primary_key=True)
-    alias = models.CharField(db_index=True, max_length=500)
+    alias = models.CharField(db_index=True, max_length=200, unique=True)
     json = models.TextField()
     set_time = models.DateTimeField(auto_now_add=True)
     apply_material_id = models.ForeignKey(ApplyMaterialSetting, on_delete=models.CASCADE)  ## Rules are only compatible with corresponding material setting
@@ -107,7 +107,7 @@ Defines the apply info, e.g. Scholarship name, score_rule
 """
 class ApplyInfoSetting(models.Model):
     apply_info_id = models.AutoField(primary_key=True)
-    scholarship_name = models.CharField(db_index=True, max_length=500)
+    scholarship_name = models.CharField(db_index=True, max_length=200, unique=True)
     apply_score_rule_id = models.ForeignKey(ApplyScoreRuleSetting, on_delete=models.CASCADE)
     apply_material_id = models.ForeignKey(ApplyMaterialSetting, on_delete=models.CASCADE)
     set_time = models.DateTimeField(auto_now_add=True)
@@ -125,6 +125,9 @@ Way to extract data (of a certain scholarship):
 find apply_info_id == current_apply_info_id && is_user_confirm, update score if necessary, output value
 """
 class ApplyInfo(models.Model):
+    class Meta:
+        ## a user can have only one application for a single scholarship
+        unique_together = ("user_id", "apply_info_id")
     apply_id = models.AutoField(primary_key=True)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     json = models.TextField()
@@ -137,7 +140,10 @@ class ApplyInfo(models.Model):
     is_user_confirm = models.BooleanField(default=False)  ### If user saves temporarily, this field will be False
 
 class TeacherScore(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    class Meta:
+        # a teacher cannot score a single entry twice
+        unique_together = ("apply_id", "teacher_id")
+    apply_id = models.ForeignKey(ApplyInfo, on_delete=models.CASCADE)
     teacher_id = models.IntegerField(db_index=True, null=False, default=0)
     score = models.IntegerField(null=False, default=0)
 

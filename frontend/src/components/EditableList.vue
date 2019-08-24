@@ -35,7 +35,11 @@
             ></el-button>
           </template>
           <template slot-scope="scope">
-            <el-form-item :prop="'tableData.' + scope.$index + col.name" style="margin-bottom: 0">
+            <el-form-item
+              :prop="'tableData.' + scope.$index + col.name"
+              style="margin-bottom: 0"
+              :rules="[{ required: true, message: '字段不能为空', trigger: 'blur' }]"
+            >
               <el-input
                 v-if="col.type === 'input'"
                 v-model="model.tableData[scope.$index][col.name]"
@@ -120,10 +124,17 @@ export default {
     handleDel(idx) {
       this.model.tableData.splice(idx, 1);
     },
+    validate() {
+      let that = this;
+      return new Promise(function(resolve, reject) {
+        that.$refs["form"].validate(valid =>
+          valid ? resolve() : reject());
+      });
+    },
     getContent() {
-      for(let i in this.model.tableData) {
-        if(this.model.tableData[i]['seq']!=null) {
-          this.model.tableData[i]['seq'] = i;
+      for (let i in this.model.tableData) {
+        if (this.model.tableData[i]["seq"] != null) {
+          this.model.tableData[i]["seq"] = i;
         }
       }
       return this.model.tableData;

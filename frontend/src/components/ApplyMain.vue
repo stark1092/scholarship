@@ -7,8 +7,12 @@
     </el-row>
     <el-row type="flex" justify="start" align="middle" style="margin-top: 20px;">
       <el-col align="start">
-        <el-select v-model="scholarship_name" placeholder="请选择要申请的奖学金" style="width: 30vw;"
-        :disabled="readOnly || is_teacher">
+        <el-select
+          v-model="scholarship_name"
+          placeholder="请选择要申请的奖学金"
+          style="width: 30vw;"
+          :disabled="readOnly || is_teacher"
+        >
           <el-option
             v-for="item in available_scholarships"
             :key="item.value"
@@ -103,8 +107,11 @@
       </el-col>
     </el-row>
     <el-row type="flex" justify="center" v-if="!readOnly && !is_teacher">
-      <el-col :span="5">
+      <el-col :span="3">
         <el-button type="success" @click="onSubmit">提交</el-button>
+      </el-col>
+      <el-col :span="3">
+        <el-button type="info" @click="onSave">暂存</el-button>
       </el-col>
     </el-row>
     <div v-if="is_teacher">
@@ -140,6 +147,7 @@ import { getApplyMainSettings } from "../api/basicSettings";
 export default {
   data() {
     return {
+      formValidationRes: [],
       readOnly: false,
       academic_criteria: [],
       academic_note: "",
@@ -186,24 +194,63 @@ export default {
     onSubmitTeacherScore() {
       console.log("Teacher_score is" + this.teacher_score);
     },
-    onSubmit() {
+    onSave() {
+      // no need to validate form because it is temporarily saved
+      let that = this;
       let form_res = {
         academic: {},
         work: {},
         other_academic: null
       };
-      let that = this;
-      this.academic_criteria.forEach(item => {
+      that.academic_criteria.forEach(item => {
         form_res.academic[item.name] = that.$refs[item.name][0].getContent();
       });
-      this.work_criteria.forEach(item => {
+      that.work_criteria.forEach(item => {
         form_res.work[item.name] = that.$refs[item.name][0].getContent();
       });
-      form_res["other_academic"] = this.other_academic_awards;
+      form_res["other_academic"] = that.other_academic_awards;
       // TODO - send this data to server side
       // TODO - remember to include scholarship_name and id
       // because the system supports multiple types of applications simultaneously
       console.log(JSON.stringify(form_res));
+    },
+    onSubmit() {
+      let that = this;
+      this.academic_criteria.forEach(item =>
+        that.formValidationRes.push(that.$refs[item.name][0].validate())
+      );
+      this.work_criteria.forEach(item =>
+        that.formValidationRes.push(that.$refs[item.name][0].validate())
+      );
+      Promise.all(that.formValidationRes)
+        .then(function() {
+          let form_res = {
+            academic: {},
+            work: {},
+            other_academic: null
+          };
+          that.academic_criteria.forEach(item => {
+            form_res.academic[item.name] = that.$refs[
+              item.name
+            ][0].getContent();
+          });
+          that.work_criteria.forEach(item => {
+            form_res.work[item.name] = that.$refs[item.name][0].getContent();
+          });
+          form_res["other_academic"] = that.other_academic_awards;
+          // TODO - send this data to server side
+          // TODO - remember to include scholarship_name and id
+          // because the system supports multiple types of applications simultaneously
+          console.log(JSON.stringify(form_res));
+        })
+        .catch(function() {
+          swal({
+            title: "错误",
+            icon: "error",
+            text: "请检查所有表单项是否完整填写",
+            button: "确定"
+          });
+        });
     }
   },
   watch: {

@@ -90,7 +90,7 @@
       </el-row>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">取 消</el-button>
-        <el-button type="primary" @click="dialogFormVisible = false; changePerInfoSubmit();">确 定</el-button>
+        <el-button type="primary" @click="changePerInfoSubmit();">确 定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -241,36 +241,44 @@ export default {
         this.$refs["perinfo"].onSubmit();
         return;
       }
-      this.$http
-        .post("changePersonalInfo", {
-          token: window.sessionStorage.token,
-          username: window.sessionStorage.username,
-          data: this.$refs["perinfo"].perinfo
-        })
-        .then(response => {
-          let res = JSON.parse(response.bodyText);
-          if (res.status === 0) {
-            let that = this;
-            swal({ title: "修改成功", icon: "success", button: "确定" }).then(
-              val => that.$router.go(0)
-            );
-          } else {
-            let that = this;
-            swal({
-              title: "出错了",
-              text: res.message,
-              icon: "error",
-              button: "确定"
-            }).then(val => {
-              if (res.status === -1) {
-                that.$router.push("/");
+      let that = this;
+      this.$refs["perinfo"].$refs["form"].validate(valid => {
+        if (valid) {
+          that.$http
+            .post("changePersonalInfo", {
+              token: window.sessionStorage.token,
+              username: window.sessionStorage.username,
+              data: that.$refs["perinfo"].perinfo
+            })
+            .then(response => {
+              let res = JSON.parse(response.bodyText);
+              that.dialogFormVisible = false;
+              if (res.status === 0) {
+                swal({
+                  title: "修改成功",
+                  icon: "success",
+                  button: "确定"
+                }).then(val => that.$router.go(0));
+              } else {
+                swal({
+                  title: "出错了",
+                  text: res.message,
+                  icon: "error",
+                  button: "确定"
+                }).then(val => {
+                  if (res.status === -1) {
+                    that.$router.push("/");
+                  }
+                });
               }
+            })
+            .catch(function(response) {
+              console.log("Error");
             });
-          }
-        })
-        .catch(function(response) {
-          console.log("Error");
-        });
+        } else {
+          swal({title: "错误", text: "请填写所有必需的选项", icon: "error", button: "确定"});
+        }
+      });
     }
   },
   components: { PerInfo, AdminPerInfo }

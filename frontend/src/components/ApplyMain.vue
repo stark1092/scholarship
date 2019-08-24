@@ -216,6 +216,7 @@ export default {
     },
     onSubmit() {
       let that = this;
+      this.formValidationRes = []
       this.academic_criteria.forEach(item =>
         that.formValidationRes.push(that.$refs[item.name][0].validate())
       );

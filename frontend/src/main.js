@@ -5,6 +5,7 @@ import ElementUI from 'element-ui'
 import VueResource from 'vue-resource'
 import VueQuillEditor from 'vue-quill-editor'
 /* eslint-disable */
+import VueObserveVisibility from 'vue-observe-visibility'
 import App from './App'
 import router from './router'
 import swal from 'sweetalert'
@@ -16,6 +17,7 @@ import 'quill/dist/quill.bubble.css'
 Vue.use(ElementUI)
 Vue.use(VueResource)
 Vue.use(VueQuillEditor)
+Vue.use(VueObserveVisibility)
 Vue.config.productionTip = false
 Vue.http.options.root = 'http://127.0.0.1:8000/'
 

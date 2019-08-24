@@ -36,7 +36,7 @@
           </template>
           <template slot-scope="scope">
             <el-form-item
-              :prop="'tableData.' + scope.$index + col.name"
+              :prop="'tableData.' + scope.$index + '.' + col.name"
               style="margin-bottom: 0"
               :rules="[{ required: true, message: '字段不能为空', trigger: 'blur' }]"
             >
@@ -85,6 +85,21 @@
         </el-table-column>
       </el-table>
       <el-row
+        v-if="!isReadOnly && model.needConfirm"
+        type="flex"
+        justify="start"
+        style="margin-top: 20px; margin-bottom: 10px;"
+      >
+        <el-form-item
+          prop="confirmed"
+          :rules="[{ type: 'array', required: true, message: '请确认已填写完整', trigger: ['blur', 'change'] }]"
+        >
+          <el-checkbox-group v-model="model.confirmed">
+            <el-checkbox name="confirmed">{{ model.confirmPrompt }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-row>
+      <el-row
         v-if="!isReadOnly"
         type="flex"
         justify="start"
@@ -127,8 +142,7 @@ export default {
     validate() {
       let that = this;
       return new Promise(function(resolve, reject) {
-        that.$refs["form"].validate(valid =>
-          valid ? resolve() : reject());
+        that.$refs["form"].validate(valid => (valid ? resolve() : reject()));
       });
     },
     getContent() {

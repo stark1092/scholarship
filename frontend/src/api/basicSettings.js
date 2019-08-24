@@ -114,6 +114,9 @@ const getApplyMainSettings = function () {
             {
                 name: "conf_paper",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有会议论文内容",
+                    confirmed: [],
                     title: "会议论文",
                     note:
                         "(1)申请人为第一作者（第一发明人）或者导师为第一作者（第一发明人）时申请人为第二作者（第二发明人）。注明：导师为学籍上导师，或者为导师指定给该申请人的副导师，导师必须在作者名单内。<br>\
@@ -263,6 +266,9 @@ const getApplyMainSettings = function () {
             {
                 name: "journal_paper",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有期刊论文内容",
+                    confirmed: [],
                     title: "期刊论文",
                     note:
                         "(1)申请人为第一作者（第一发明人）或者导师为第一作者（第一发明人）时申请人为第二作者（第二发明人）。注明：导师为学籍上导师，或者为导师指定给该申请人的副导师，导师必须在作者名单内。<br>\
@@ -419,6 +425,9 @@ const getApplyMainSettings = function () {
             {
                 name: "patent",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有专利内容",
+                    confirmed: [],
                     title: "专利",
                     note:
                         "(1)申请人为第一作者（第一发明人）或者导师为第一作者（第一发明人）时申请人为第二作者（第二发明人）。注明：导师为学籍上导师，或者为导师指定给该申请人的副导师，导师必须在作者名单内。<br>\
@@ -504,6 +513,9 @@ const getApplyMainSettings = function () {
             {
                 name: "project",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有项目内容",
+                    confirmed: [],
                     title: "项目",
                     templateData: {
                         seq: 0,
@@ -579,6 +591,9 @@ const getApplyMainSettings = function () {
             {
                 name: "intl_standard",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有国际标准内容",
+                    confirmed: [],
                     title: "国际标准",
                     templateData: {
                         seq: 0,
@@ -599,7 +614,7 @@ const getApplyMainSettings = function () {
                             type: "input",
                             label: "作者",
                             name: "author",
-                            colWidth: "400%"
+                            colWidth: "300%"
                         },
                         {
                             type: "input",
@@ -635,6 +650,9 @@ const getApplyMainSettings = function () {
             {
                 name: "conf_award",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有会议奖励内容",
+                    confirmed: [],
                     title: "会议奖励",
                     templateData: {
                         seq: 0,
@@ -707,6 +725,9 @@ const getApplyMainSettings = function () {
             {
                 name: "post",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有岗位内容",
+                    confirmed: [],
                     title: "担任岗位",
                     templateData: {
                         seq: 0,
@@ -790,6 +811,9 @@ const getApplyMainSettings = function () {
             {
                 name: "accu_pro",
                 content: {
+                    needConfirm: true,
+                    confirmPrompt: "我已确认填写完所有累积项目内容",
+                    confirmed: [],
                     title: "累积项目",
                     templateData: {
                         seq: 0,

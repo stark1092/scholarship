@@ -1,7 +1,11 @@
 <template>
   <div>
-    <el-form :inline="true" ref="filter_form" :model="filter" label-width="50px">
-      <el-form-item label="筛选">
+    <el-form :inline="true" ref="filter_form" :model="filter.conditions" label-width="50px">
+      <el-form-item
+        label="筛选"
+        :rules="[{ required: true, message: '字段不能为空', trigger: ['change','blur'] }]"
+        prop="scholarship_name"
+      >
         <el-select v-model="filter.conditions.scholarship_name" placeholder="请选择奖学金">
           <el-option
             v-for="item in filter.scholarship_names"
@@ -10,7 +14,12 @@
             :value="item.value"
           ></el-option>
         </el-select>
-        <el-select v-model="filter.conditions.student_type" placeholder style="width: 5vw; min-width: 80px;">
+      </el-form-item>
+      <el-form-item :rules="[{ required: true, message: '字段不能为空', trigger: ['change','blur'] }]" prop="student_type">
+        <el-select
+          v-model="filter.conditions.student_type"
+          placeholder
+          style="width: 5vw; min-width: 80px;">
           <el-option
             v-for="item in filter.student_types"
             :key="item.value"
@@ -20,7 +29,13 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-select v-model="filter.conditions.department" placeholder style="width: 8vw; min-width: 100px;">
+        <el-select
+          clearable
+          v-model="filter.conditions.department"
+          placeholder
+          style="width: 8vw; min-width: 100px;"
+          prop="department"
+        >
           <el-option
             v-for="item in filter.departments"
             :key="item.value"
@@ -29,8 +44,16 @@
           ></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="排序">
-        <el-select v-model="filter.conditions.ordering" placeholder style="width: 7vw; min-width: 130px;">
+      <el-form-item
+        label="排序"
+        :rules="[{ required: true, message: '字段不能为空', trigger: ['change','blur'] }]"
+        prop="ordering"
+      >
+        <el-select
+          v-model="filter.conditions.ordering"
+          placeholder
+          style="width: 7vw; min-width: 130px;"
+        >
           <el-option
             v-for="item in filter.ordering_list"
             :key="item.value"
@@ -78,7 +101,7 @@ const numElemPerPage = 15;
 export default {
   data() {
     return {
-      isAdmin: false, // TODO - set this according to user type
+      isAdmin: window.sessionStorage.user_type === '2',
       numPages: 0,
       model: {
         tableColumn: [
@@ -173,13 +196,16 @@ export default {
           department: "",
           ordering: ""
         },
-        scholarship_names: [{
-          value: "s1",
-          label: "Scholarship 1"
-        },{
-          value: "s2",
-          label: "Scholarship 2"
-        }],
+        scholarship_names: [
+          {
+            value: "s1",
+            label: "Scholarship 1"
+          },
+          {
+            value: "s2",
+            label: "Scholarship 2"
+          }
+        ],
         student_types: getRoughStudentTypeList(),
         departments: getDepartmentList(),
         ordering_list: [
@@ -195,7 +221,7 @@ export default {
             value: "work_score",
             label: "社工得分"
           }
-        ],
+        ]
       }
     };
   },
@@ -250,18 +276,31 @@ export default {
       });
     },
     submitFilter() {
-      this.$http.post('filterAndSort', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username, 
-      'data': this.filter.conditions}).then(response => {
-        let json = JSON.parse(response.bodyText);
-        console.log(json)
-        if(json.status == 0) {
-          this.buffer = json.applicant;
-          this.numPages = Math.ceil(this.buffer.length / numElemPerPage);
-          this.handlePageChange(1);
+      this.$refs["filter_form"].validate(valid => {
+        console.log(valid)
+        if (valid) {
+          this.$http
+            .post("filterAndSort", {
+              token: window.sessionStorage.token,
+              username: window.sessionStorage.username,
+              data: this.filter.conditions
+            })
+            .then(response => {
+              let json = JSON.parse(response.bodyText);
+              console.log(json);
+              if (json.status == 0) {
+                this.buffer = json.applicant;
+                this.numPages = Math.ceil(this.buffer.length / numElemPerPage);
+                this.handlePageChange(1);
+              }
+            })
+            .catch(function(response) {
+              console.log("Error");
+            });
+        } else {
+          swal({title: "错误", text: "请选择完整筛选条件", icon: "error", button: "确定"});
         }
-      }).catch(function(response){
-        console.log('Error')
-      })
+      });
     },
     exportList() {
       // submit filter to backend, and request generating excel file

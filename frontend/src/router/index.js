@@ -60,7 +60,8 @@ const router = new Router({
       path: '/admin',
       component: ScholarshipAdminMain,
       meta: {
-        needLogin: true
+        needLogin: true,
+        needAdmin: true
       },
       children: [
         {
@@ -112,6 +113,11 @@ router.beforeEach((to, from, next) => {
     next({
       path: '/',
       query: {message: '未登录，现在跳转到登录页面'}
+    })
+  }
+  if (to.meta.needAdmin && window.sessionStorage.user_type !== '2') {
+    next({
+      path: '/home'
     })
   }
   next()

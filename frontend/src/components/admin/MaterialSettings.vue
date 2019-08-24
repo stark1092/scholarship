@@ -136,7 +136,13 @@ export default {
             console.log(json);
             if (json.status === 0) {
               this.dialogVisible = false;
-              that.load();
+              swal({
+                title: "添加成功",
+                icon: "success",
+                button: "确定"
+              }).then(val => {
+                that.load();
+              })
             } else {
               let that = this;
               swal({
@@ -182,7 +188,13 @@ export default {
             console.log(json);
             if (json.status === 0) {
               this.dialogVisible = false;
-              that.tableData.splice(idx, 1);
+              swal({
+                title: "删除成功",
+                icon: "success",
+                button: "确定"
+              }).then(val => {
+                that.tableData.splice(idx, 1);
+              })
             } else {
               let that = this;
               swal({

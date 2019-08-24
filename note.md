@@ -49,21 +49,21 @@ Always use **POST** request, and the post data is as follows. Note here I didn't
 
 ### Teacher Side
 
-- [ ] Change password (this works the same as admin, you just have to implement once. Please send MD5-encoded password)
+- [x] Change password (this works the same as admin, you just have to implement once. Please send MD5-encoded password)
 - [ ] Set the score of individual students (also in ApplyMain.vue. Hint: **the server can return user_type to client, allowing it to determine whether it is teacher, and display scoring gadgets accordingly. There is a variable named isTeacher in that component. Use it wisely**)
 
 ### Admin Side
 
 - [ ] Download XLSX/ CSV data of all applicants from ApplyList.vue. Similarly, there is a isAdmin in that component, if set to true, an extra DOWNLOAD XLSX button will show up.
-- [ ] Send notifications to all users. **Easy to implement! I have set up a rich-text editor in that page(/admin/notify), and you can obtain encoded HTML directly and send it to server**
-- [ ] Support upload DOC/ DOCX file to server and have it converted to HTML to form a notification. Hint: there are many Python libs that can support this. All that you need to take care of is a robust file uploader.
+- [x] Send notifications to all users. **Easy to implement! I have set up a rich-text editor in that page(/admin/notify), and you can obtain encoded HTML directly and send it to server**
+- [x] Support upload DOC/ DOCX file to server and have it converted to HTML to form a notification. Hint: there are many Python libs that can support this. All that you need to take care of is a robust file uploader.
 - [ ] Scholarship application settings (/admin/apply_info_settings): add scholarship, edit scholarship, enable/disable the application, delete scholarship
 - [ ] Scoring rule settings (/admin/apply_score_rule_settings): add/edit/delete scoring rules. **The rules are encoded as JSON directly.**
-- [ ] Application material rule settings (/admin/apply_material_settings): add/edit/delete rules. **Encoded as JSON as well**.
+- [x] Application material rule settings (/admin/apply_material_settings): add/edit/delete rules. **Encoded as JSON as well**.
 
 ### Challenging Tasks
 
-- [ ] Scoring rules parsers and score calculators
+- [x] Scoring rules parsers and score calculators
 
 ## Extra Notes
 

@@ -155,7 +155,7 @@ export default {
       work_note: "",
       other_academic_awards: "",
       other_note: "",
-      is_teacher: false,
+      is_teacher: window.sessionStorage.user_type === '1',
       teacher_score: 0.0,
       scholarship_name: "",
       available_scholarships: [

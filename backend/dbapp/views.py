@@ -13,6 +13,7 @@ from django.forms.models import model_to_dict
 import uuid
 import sys
 import datetime
+import mammoth
 sys.path.append('../')
 
 # utils start
@@ -294,15 +295,15 @@ def changePersonalInfo(req):
 def getNotify(req):
     if(req.method == 'POST'):
         result = {'status': 1}
-        #testNotify()
         try:
             data = json.loads(req.body)
             notify = []
-            notifies = models.Notify.objects.all()
+            notifies = models.Notify.objects.all().order_by('-date')
             for each_notify in notifies:
                 notify.append({'title' : each_notify.title,
                             'date' : each_notify.date,
-                            'link' : each_notify.link})
+                            'link' : each_notify.link,
+                            'id': each_notify.id})
             result['data'] = notify
             result['status'] = 0
             return JsonResponse(result)
@@ -311,12 +312,73 @@ def getNotify(req):
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
+@check_admin
+@csrf_exempt
+def delNotify(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.Notify.objects.filter(id=data['data']['id'], title=data['data']['title']).delete()
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+        finally:
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def sendNotify(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.Notify.objects.create(title=data['data']['title'], link=data['data']['link'])
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+        finally:
+            return JsonResponse(result)
+
+@csrf_exempt
+def sendNotifyUpload(req):
+    if(req.method == 'POST'):
+        try:
+            result = {'status' : 1}
+            username = req.POST.get('username')
+            token = req.POST.get('token')
+            f = req.FILES.get('file')
+            title = req.POST.get('title')
+            if(validateToken(token, token_exp_time) == username):
+                user = models.User.objects.get(username=username)
+                if(user.user_type == 2):
+                    updateToken(token)
+                    ## do real work here
+                    f.seek(0)
+                    converted = mammoth.convert_to_html(f)
+                    html = converted.value
+                    models.Notify.objects.create(title=title, link=converted.value)
+                    result['status'] = 0
+                else:
+                    result['message'] = '无操作权限'
+            else:
+                result['status'] = -1
+                result['message'] = '用户未登录'
+        except Exception as e:
+            print(e)
+            result['message'] = '请求无效'
+        finally:
+            return JsonResponse(result)
+
 @check_login
 @csrf_exempt
 def filterAndSort(req):
     if(req.method == 'POST'):
-        result = {'status': 1}
-        testApplicant()
+        result = {'status': 1, 'message': 'Not implemented'}
+        ## TODO - edit this
+        return JsonResponse(result)
         try:
             data = json.loads(req.body)
             filters = {}
@@ -349,89 +411,6 @@ def filterAndSort(req):
             print(e)
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
-#因为评分与json还没有很好的结合起来，因此暂时采用这种方法。以下代码为test
-
-## TODO - remove test codes later
-def testApplicant():
-    models.User.objects.all().delete()
-    user = models.User(username = 'jzt',
-                        password = '123456',
-                        name = '金子童',
-                        student_id = 2015011739,
-                        user_type = 0,
-                        class_name = 'asdfg',
-                        gender = 'male',
-                        department = 'media',
-                        student_type = 'master',
-                        grade = '1',
-                        student_status = 'cst',
-                        political_status = 'party',
-                        ethnic_group = 'asdf',
-                        instructor = 'asdf',
-                        email = '123456@qq.com',
-                        mobile = '123432',
-                        address = 'asdfdas',
-                        post_code = '123456',
-                        is_project_started = False)
-    user.save()
-    models.ApplyMaterialSetting.objects.all().delete()
-    ms = models.ApplyMaterialSetting(
-        alias = 'example',
-        json = 'docx'
-    )
-    ms.save()
-    models.ApplyScoreRuleSetting.objects.all().delete()
-    rs = models.ApplyScoreRuleSetting(
-        alias = 'example',
-        json = '+1',
-        apply_material_id = ms
-    )
-    rs.save()
-    models.ApplyInfoSetting.objects.all().delete()
-    ais = models.ApplyInfoSetting(
-        scholarship_name = 's1',
-        apply_score_rule_id = rs,
-        apply_material_id = ms,
-        can_apply = True
-    )
-    ais.save()
-    models.ApplyInfo.objects.all().delete()
-    ai = models.ApplyInfo(
-        user_id = user,
-        json = '{"student_num": "123456",\
-                    "name": "金子童",\
-                    "a_paper": "1",\
-                    "b_paper": "2",\
-                    "c_paper": "3",\
-                    "o_paper": "4",\
-                    "patent": "0",\
-                    "academic_score": "5",\
-                    "work_score": "5",\
-                    "teacher_score": "5",\
-                    "tot_score": "10",\
-                    "num_report": "0",\
-                    "link": {\
-                        "link": "123456",\
-                        "label": "点击查看"\
-                    }\
-                }',
-        apply_info_id = ais,
-        apply_score_rule_id = rs,
-        apply_material_id = ms,
-        score = 100,
-        is_score_updated = True,
-        is_user_confirm = True
-    )
-    ai.save()
-
-def testNotify():
-    models.Notify.objects.all().delete()
-    for i in range(5):
-        notify = models.Notify(title = 'test' + str(i),
-                    date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    link = 'link' + str(i))
-        notify.save()
-    models.Notify.objects.filter(title='test2').delete()
 
 @check_admin_teacher
 @csrf_exempt
@@ -486,7 +465,7 @@ def getMaterial(req):
         try:
             data = json.loads(req.body)
             result['status'] = 0
-            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all())
+            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all().order_by("-set_time"))
             return JsonResponse(result)
         except Exception as e:
             print(e)

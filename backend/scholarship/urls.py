@@ -32,6 +32,12 @@ urlpatterns = [
     path('changePassword', views.changePassword),
     path('addMaterial', views.addMaterial),
     path('getMaterial', views.getMaterial),
+    path('getMaterialList',views.getMaterialList),
     path('delMaterial', views.delMaterial),
-    path('editMaterial', views.editMaterial)
+    path('editMaterial', views.editMaterial),
+    path('addScoreRule', views.addScoreRule),
+    path('getScoreRule', views.getScoreRule),
+    path('getScoreRuleList', views.getScoreRuleList),
+    path('delScoreRule', views.delScoreRule),
+    path('editScoreRule', views.editScoreRule)
 ]

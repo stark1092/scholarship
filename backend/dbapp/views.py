@@ -437,6 +437,11 @@ def changePassword(req):
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
+
+##### 
+##### Material APIs
+#####
+
 @check_admin
 @csrf_exempt
 def addMaterial(req):
@@ -464,12 +469,27 @@ def getMaterial(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
+            result['data'] = models.ApplyMaterialSetting.objects.get(apply_material_id=data['data']).json
             result['status'] = 0
-            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all().order_by("-set_time"))
-            return JsonResponse(result)
         except Exception as e:
             print(e)
             result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def getMaterialList(req):
+    if(req.method == 'POST'):
+        result = {'status' : 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all().order_by("-set_time"),fields=('apply_material_id','alias','set_time'))
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
             return JsonResponse(result)
 
 @check_admin
@@ -496,6 +516,98 @@ def editMaterial(req):
             data = json.loads(req.body)
             data = data['data']
             model = models.ApplyMaterialSetting.objects.get(apply_material_id=data['pk'])
+            model.alias=data['alias']
+            model.json=data['json']
+            model.save(force_update=True)
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+##### 
+##### ScoreRule APIs
+#####
+
+@check_admin
+@csrf_exempt
+def addScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ms = models.ApplyMaterialSetting.objects.get(apply_material_id=data['apply_material_id'])
+            srs = models.ApplyScoreRuleSetting(
+                alias = data['alias'],
+                json = data['json'],
+                apply_material_id = ms
+            )
+            srs.save()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def getScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = models.ApplyScoreRuleSetting.objects.get(apply_score_rule_id=data['data']).json
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def getScoreRuleList(req):
+    if(req.method == 'POST'):
+        result = {'status' : 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = serializers.serialize('json', models.ApplyScoreRuleSetting.objects.all().order_by("-set_time"),fields=('apply_score_rule_id','alias','set_time', 'apply_material_id'))
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def delScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.ApplyScoreRuleSetting.objects.filter(apply_score_rule_id=data['data']).delete()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def editScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ms = models.ApplyMaterialSetting.objects.get(apply_material_id=data['apply_material_id'])
+            model = models.ApplyScoreRuleSetting.objects.get(apply_score_rule_id=data['pk'])
+            model.apply_material_id = ms
             model.alias=data['alias']
             model.json=data['json']
             model.save(force_update=True)

@@ -8,7 +8,7 @@
     <el-row type="flex" justify="start" align="middle" style="margin-top: 20px;">
       <el-col align="start">
         <el-select
-          v-model="scholarship_name"
+          v-model="scholarship_id"
           placeholder="请选择要申请的奖学金"
           style="width: 30vw;"
           :disabled="readOnly || is_teacher"
@@ -155,19 +155,10 @@ export default {
       work_note: "",
       other_academic_awards: "",
       other_note: "",
-      is_teacher: window.sessionStorage.user_type === '1',
+      is_teacher: window.sessionStorage.user_type === "1",
       teacher_score: 0.0,
-      scholarship_name: "",
-      available_scholarships: [
-        {
-          value: "s1",
-          label: "Scholarship 1"
-        },
-        {
-          value: "s2",
-          label: "Scholarship 2"
-        }
-      ]
+      scholarship_id: "",
+      available_scholarships: []
     };
   },
   components: { PerInfo, EditableList },
@@ -179,6 +170,39 @@ export default {
     this.work_criteria = settings.work_criteria;
     this.work_note = settings.work_note;
     this.other_note = settings.other_note;
+    let that = this;
+    this.$http
+      .post("getAvailableScholarshipList", {
+        username: window.sessionStorage.username,
+        token: window.sessionStorage.token
+      })
+      .then(response => {
+        let res = JSON.parse(response.bodyText);
+        if (res.status === 0) {
+          res = JSON.parse(res.data)
+          res.forEach(e => {
+            that.available_scholarships.push({
+              value: e.pk,
+              label: e.fields.scholarship_name
+            })
+          })
+        } else {
+          swal({
+            title: "出错了",
+            text: res.message,
+            icon: "error",
+            button: "确定"
+          }).then(val => {
+            if (res.status === -1) {
+              that.$router.push("/");
+            }
+          });
+        }
+      })
+      .catch(response => {
+        console.log(response);
+        console.log("Err");
+      });
   },
   methods: {
     setReadOnly() {
@@ -216,7 +240,7 @@ export default {
     },
     onSubmit() {
       let that = this;
-      this.formValidationRes = []
+      this.formValidationRes = [];
       this.academic_criteria.forEach(item =>
         that.formValidationRes.push(that.$refs[item.name][0].validate())
       );

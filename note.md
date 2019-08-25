@@ -57,7 +57,7 @@ Always use **POST** request, and the post data is as follows. Note here I didn't
 - [ ] Download XLSX/ CSV data of all applicants from ApplyList.vue. Similarly, there is a isAdmin in that component, if set to true, an extra DOWNLOAD XLSX button will show up.
 - [x] Send notifications to all users. **Easy to implement! I have set up a rich-text editor in that page(/admin/notify), and you can obtain encoded HTML directly and send it to server**
 - [x] Support upload DOC/ DOCX file to server and have it converted to HTML to form a notification. Hint: there are many Python libs that can support this. All that you need to take care of is a robust file uploader.
-- [ ] Scholarship application settings (/admin/apply_info_settings): add scholarship, edit scholarship, enable/disable the application, delete scholarship
+- [x] Scholarship application settings (/admin/apply_info_settings): add scholarship, edit scholarship, enable/disable the application, delete scholarship
 - [x] Scoring rule settings (/admin/apply_score_rule_settings): add/edit/delete scoring rules. **The rules are encoded as JSON directly.**
 - [x] Application material rule settings (/admin/apply_material_settings): add/edit/delete rules. **Encoded as JSON as well**.
 

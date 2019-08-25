@@ -30,14 +30,23 @@ urlpatterns = [
     path('delNotify', views.delNotify),
     path('filterAndSort', views.filterAndSort),
     path('changePassword', views.changePassword),
+    ### material APIs
     path('addMaterial', views.addMaterial),
     path('getMaterial', views.getMaterial),
     path('getMaterialList',views.getMaterialList),
     path('delMaterial', views.delMaterial),
     path('editMaterial', views.editMaterial),
+    ### scoreRule APIs
     path('addScoreRule', views.addScoreRule),
     path('getScoreRule', views.getScoreRule),
     path('getScoreRuleList', views.getScoreRuleList),
     path('delScoreRule', views.delScoreRule),
-    path('editScoreRule', views.editScoreRule)
+    path('editScoreRule', views.editScoreRule),
+    ### scholarshipInfo APIs
+    path('addScholarshipInfo', views.addScholarshipInfo),
+    path('getAvailableScholarshipList', views.getAvailableScholarshipList),
+    path('getScholarshipInfoList', views.getScholarshipInfoList),
+    path('delScholarshipInfo', views.delScholarshipInfo),
+    path('editScholarshipInfo', views.editScholarshipInfo),
+    path('switchScholarshipAvailability', views.switchScholarshipAvailability)
 ]

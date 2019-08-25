@@ -168,6 +168,7 @@ export default {
         });
     },
     handleAdd() {
+      this.editCallback = null;
       this.scoreRule = {
         alias: "",
         apply_material_id: "",
@@ -265,6 +266,7 @@ export default {
       this.confirmDialogVisible = true;
     },
     handleEdit(idx, row) {
+      this.addCallback = null;
       this.dialogTitle = "编辑规则" + row.alias;
       this.dialogVisible = true;
       this.scoreRule.alias = row.alias;

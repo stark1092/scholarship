@@ -2,3 +2,4 @@ stucs_client_id = 'stucs_client_id'
 stucs_client_secret = 'stucs_secret'
 hostname = 'http://127.0.0.1:8080'
 token_exp_time = 900 # in seconds
+scorer_workers = 6

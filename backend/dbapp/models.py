@@ -132,9 +132,14 @@ class ApplyInfo(models.Model):
     json = models.TextField()
     apply_info_id = models.ForeignKey(ApplyInfoSetting, on_delete=models.CASCADE)
     apply_date = models.DateTimeField(db_index=True, auto_now_add=True)
-    score = models.IntegerField(db_index=True, null=False, default=0)
+    score = models.FloatField(db_index=True, null=False, default=0)
+    academic_score = models.FloatField(null=False, default=0)
+    work_score = models.FloatField(null=False, default=0)
+    wrong_time = models.BooleanField(default=False)
+    extra_info = models.TextField()
     is_score_updated = models.BooleanField(default=False)
     is_user_confirm = models.BooleanField(default=False)  ### If user saves temporarily, this field will be False
+    report_num = models.IntegerField(default=0)
 
 class TeacherScore(models.Model):
     class Meta:

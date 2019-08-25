@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from dbapp import models
 import requests
 import urllib
+from django.utils.timezone import utc
 import urllib.parse
 import json
 from config import *
@@ -14,7 +15,41 @@ import uuid
 import sys
 import datetime
 import mammoth
+from django.db import connections
+from dbapp import scorer
+import time
 sys.path.append('../')
+
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
+scorer_executor = ThreadPoolExecutor(max_workers=scorer_workers)
+scorer_map = {}
+
+def scorerInBackGround(*arg, **kwargs):
+    user_id = kwargs['user']
+    apply_info_id = kwargs['apply_info']
+    print("Start scoring user:{}, apply:{}...".format(user_id, apply_info_id))
+    time.sleep(0.1)
+    try:
+        user = models.User.objects.get(user_id=user_id)
+        apply_info = models.ApplyInfoSetting.objects.get(apply_info_id=apply_info_id)
+        entry = models.ApplyInfo.objects.get(user_id=user,apply_info_id=apply_info)
+        if(apply_info.apply_score_rule_id.apply_score_rule_id not in scorer_map):
+            scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id] = scorer.ScoreCalculator(json.loads(apply_info.apply_score_rule_id.json))
+        print("Get entry succesfully, evaluating...")
+        score_res = scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id].getScore(json.loads(entry.json))
+        entry.score = score_res[0]
+        entry.academic_score = score_res[1]
+        entry.work_score = score_res[2]
+        entry.extra_info = score_res[3]
+        entry.wrong_time = score_res[4]
+        entry.is_score_updated = True
+        entry.save()
+        print(score_res)
+    except Exception as e:
+        print(e)
+    finally:
+        connections.close_all()
 
 # utils start
 sessionUser = {}  # token - username
@@ -290,7 +325,7 @@ def changePersonalInfo(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            data['data']['last_modify'] = datetime.datetime.now()
+            data['data']['last_modify'] = datetime.datetime.utcnow().replace(tzinfo=utc)
             res = models.User.objects.filter(
                 username=data['username']).update(**data['data'])
             result['status'] = 0
@@ -655,6 +690,10 @@ def editScoreRule(req):
             model.alias = data['alias']
             model.json = data['json']
             model.save(force_update=True)
+            ### refresh scorer if already in memory
+            ### TODO - refresh user application entries
+            if(data['pk'] in scorer_map.keys()):
+                scorer_map[data['pk']] = scorer.ScoreCalculator(json.loads(data['json']))
             result['status'] = 0
             return JsonResponse(result)
         except Exception as e:
@@ -814,13 +853,15 @@ def sendApplyInfo(req):
                 apply_info_id=data['data']['scholarship_id'])
             user = models.User.objects.get(username=data['username'])
             models.ApplyInfo.objects.update_or_create(user_id=user, apply_info_id=model,
-                                                      defaults={'apply_date': datetime.datetime.now(),
+                                                      defaults={'apply_date': datetime.datetime.utcnow().replace(tzinfo=utc),
                                                                 'score': 0,
                                                                 'user_id': user,
                                                                 'apply_info_id': model,
                                                                 'json': data['data']['form'],
                                                                 'is_score_updated': False,
                                                                 'is_user_confirm': data['data']['confirm']})
+            if(data['data']['confirm']):
+                scorer_executor.submit(scorerInBackGround, user=user.user_id, apply_info=model.apply_info_id)
             result['status'] = 0
         except Exception as e:
             print(e)

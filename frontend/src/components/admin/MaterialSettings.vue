@@ -114,6 +114,7 @@ export default {
         });
     },
     handleAdd() {
+      this.editCallback = null;
       this.materialRule = {
         alias: "",
         json: ""
@@ -212,6 +213,7 @@ export default {
       this.confirmDialogVisible = true;
     },
     handleEdit(idx, row) {
+      this.addCallback = null;
       this.dialogTitle = "编辑规则" + row.alias;
       this.dialogVisible = true;
       this.materialRule.alias = this.tableData[idx].alias;

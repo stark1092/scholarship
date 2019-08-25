@@ -202,6 +202,7 @@ export default {
         });
     },
     handleAdd() {
+      this.editCallback = null;
       this.scholarshipInfo = {
         scholarship_name: "",
         score_rule: ""
@@ -297,6 +298,7 @@ export default {
       this.confirmDialogVisible = true;
     },
     handleEdit(idx, row) {
+      this.addCallback = null;
       this.dialogTitle = "编辑" + row.scholarship_name + "设置";
       this.dialogVisible = true;
       this.scholarshipInfo.scholarship_name = row.scholarship_name;

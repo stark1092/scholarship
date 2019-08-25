@@ -32,7 +32,8 @@ const router = new Router({
       path: '/home',
       component: ScholarshipMain,
       meta: {
-        needLogin: true
+        needLogin: true,
+        title: '奖学金系统'
       },
       children: [
         {
@@ -61,7 +62,8 @@ const router = new Router({
       component: ScholarshipAdminMain,
       meta: {
         needLogin: true,
-        needAdmin: true
+        needAdmin: true,
+        title: '奖学金系统-管理后台'
       },
       children: [
         {

@@ -124,7 +124,6 @@ export default {
         })
         .catch(function(response) {
           console.log(response);
-          console.log("Error");
         });
     },
     getScoreRuleSettings(cb) {
@@ -164,7 +163,6 @@ export default {
         })
         .catch(function(response) {
           console.log(response);
-          console.log("Error");
         });
     },
     handleChangeAvailability(evt, idx, row) {
@@ -201,7 +199,6 @@ export default {
         })
         .catch(response => {
           console.log(response);
-          console.log("Err");
         });
     },
     handleAdd() {
@@ -246,7 +243,6 @@ export default {
               }
             })
             .catch(function(response) {
-              console.log("Error");
             });
         };
       });
@@ -295,7 +291,7 @@ export default {
             }
           })
           .catch(function(response) {
-            console.log("Error");
+            console.log(response);
           });
       };
       this.confirmDialogVisible = true;
@@ -341,7 +337,7 @@ export default {
               }
             })
             .catch(function(response) {
-              console.log("Error");
+              console.log(response);
             });
         };
       });

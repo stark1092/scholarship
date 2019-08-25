@@ -109,7 +109,7 @@ export default {
           }
         })
         .catch(function(res) {
-          console.log("Error");
+          console.log(res);
         });
     },
     handleChange(file, fileList) {
@@ -168,7 +168,7 @@ export default {
             }
           })
           .catch(function(response) {
-            console.log("Error");
+            console.log(response);
           });
       }
     },

@@ -266,8 +266,11 @@ def getPersonalInfo(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            res = models.User.objects.get(username=data['username'])
-            models.LogAction('getPersonalInfo', res, getIpAddr(req))
+            res = None
+            if('stu_num' in data.keys()):
+                res = models.User.objects.get(student_id=data['stu_num'])
+            else:
+                res = models.User.objects.get(username=data['username'])
             res = model_to_dict(res)
             res.pop('password')  # !important
             res.pop('user_id')
@@ -817,7 +820,7 @@ def sendApplyInfo(req):
                                                                 'apply_info_id': model,
                                                                 'json': data['data']['form'],
                                                                 'is_score_updated': False,
-                                                                'is_user_confirm': True})
+                                                                'is_user_confirm': data['data']['confirm']})
             result['status'] = 0
         except Exception as e:
             print(e)
@@ -834,14 +837,81 @@ def obtainApplyInfo(req):
             data = json.loads(req.body)
             model = models.ApplyInfoSetting.objects.get(
                 apply_info_id=data['data']['scholarship_id'])
-            user = models.User.objects.get(username=data['username'])
+            user = None
+            if('stu_num' in data['data'].keys()):
+                user = models.User.objects.get(student_id=data['data']['stu_num'])
+            else:
+                user = models.User.objects.get(username=data['username'])
             try:
                 res = models.ApplyInfo.objects.get(user_id=user, apply_info_id=model)
-                result['data'] = res.json
+                result['data'] = { 'json': res.json, 'is_user_confirm': res.is_user_confirm, 'id': res.apply_id }
             except models.ApplyInfo.DoesNotExist:
                 result['data'] = ""
             finally:
                 result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
+        finally:
+            return JsonResponse(result)
+
+@check_login
+@csrf_exempt
+def withdrawApplyInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']['scholarship_id'])
+            user = models.User.objects.get(username=data['username'])
+            models.ApplyInfo.objects.filter(user_id=user, apply_info_id=model).delete()
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
+        finally:
+            return JsonResponse(result)
+
+###
+### Teacher Scoring
+###
+@check_teacher
+@csrf_exempt
+def setApplyInfoScore(req):
+    if(req.method == 'POST'):
+        result = {'status' : 1}
+        try:
+            data = json.loads(req.body)
+            apply = models.ApplyInfo.objects.get(apply_id=data['data']['apply_id'])
+            teacher = models.User.objects.get(username=data['username'])
+            models.TeacherScore.objects.update_or_create(apply_id=apply, teacher_id=teacher, defaults={
+                'teacher_id': teacher,
+                'apply_id': apply,
+                'score': data['data']['score']
+            })
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
+        finally:
+            return JsonResponse(result)
+
+@check_teacher
+@csrf_exempt
+def getApplyInfoScore(req):
+    if(req.method == 'POST'):
+        result = {'status' : 1}
+        try:
+            data = json.loads(req.body)
+            apply = models.ApplyInfo.objects.get(apply_id=data['data']['apply_id'])
+            teacher = models.User.objects.get(username=data['username'])
+            try:
+                res = models.TeacherScore.objects.get(apply_id=apply, teacher_id=teacher)
+                result['data'] = res.score
+            except models.TeacherScore.DoesNotExist:
+                result['data'] = 0.0
+            result['status'] = 0
         except Exception as e:
             print(e)
             result['message'] = "服务器内部错误"

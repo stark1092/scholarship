@@ -278,7 +278,7 @@ export default {
               }
             })
             .catch(function(response) {
-              console.log("Error");
+              console.log(response);
             });
         } else {
           swal({title: "错误", text: "请填写所有必需的选项", icon: "error", button: "确定"});

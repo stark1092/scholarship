@@ -88,7 +88,7 @@ export default {
           }
         })
         .catch(function(response) {
-          console.log("Error");
+          console.log(response);
         });
     },
     handleDetails(idx, row) {
@@ -130,7 +130,7 @@ export default {
           }
         })
         .catch(function(response) {
-          console.log("Error");
+          console.log(response);
         });
     }
   }

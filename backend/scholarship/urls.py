@@ -52,5 +52,9 @@ urlpatterns = [
     path('switchScholarshipAvailability', views.switchScholarshipAvailability),
     ### application APIs
     path('sendApplyInfo', views.sendApplyInfo),
-    path('obtainApplyInfo', views.obtainApplyInfo)
+    path('obtainApplyInfo', views.obtainApplyInfo),
+    path('withdrawApplyInfo', views.withdrawApplyInfo),
+    ### teacher score APIs
+    path('setApplyInfoScore', views.setApplyInfoScore),
+    path('getApplyInfoScore', views.getApplyInfoScore)
 ]

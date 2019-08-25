@@ -126,7 +126,6 @@ export default {
         })
         .catch(function(response) {
           console.log(response);
-          console.log("Error");
         });
     },
     getMaterialSettings(cb) {
@@ -166,7 +165,6 @@ export default {
         })
         .catch(function(response) {
           console.log(response);
-          console.log("Error");
         });
     },
     handleAdd() {
@@ -212,7 +210,7 @@ export default {
               }
             })
             .catch(function(response) {
-              console.log("Error");
+              console.log(response);
             });
         };
       });
@@ -261,7 +259,7 @@ export default {
             }
           })
           .catch(function(response) {
-            console.log("Error");
+            console.log(response);
           });
       };
       this.confirmDialogVisible = true;
@@ -317,7 +315,7 @@ export default {
                     }
                   })
                   .catch(function(response) {
-                    console.log("Error");
+                    console.log(response);
                   });
               };
             } else {
@@ -335,7 +333,6 @@ export default {
           })
           .catch(response => {
             console.log(response);
-            console.log("Err");
           });
       });
     },

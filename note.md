@@ -39,7 +39,7 @@ Always use **POST** request, and the post data is as follows. Note here I didn't
 
 - [x] Scholarship application form submission(Just send encoded JSON, and the server stores it. Yuh! That's sufficient. No more conversion is needed.)
 
-- [ ] Obtain scholarship application information for individual students
+- [x] Obtain scholarship application information for individual students
 
   (Note: reuse ApplyMain.vue page, but pass the student_id in the router parameter, and obtain this id in your handler, and POST necessary data to server to get the response)
 
@@ -50,7 +50,7 @@ Always use **POST** request, and the post data is as follows. Note here I didn't
 ### Teacher Side
 
 - [x] Change password (this works the same as admin, you just have to implement once. Please send MD5-encoded password)
-- [ ] Set the score of individual students (also in ApplyMain.vue. Hint: **the server can return user_type to client, allowing it to determine whether it is teacher, and display scoring gadgets accordingly. There is a variable named isTeacher in that component. Use it wisely**)
+- [x] Set the score of individual students (also in ApplyMain.vue. Hint: **the server can return user_type to client, allowing it to determine whether it is teacher, and display scoring gadgets accordingly. There is a variable named isTeacher in that component. Use it wisely**)
 
 ### Admin Side
 

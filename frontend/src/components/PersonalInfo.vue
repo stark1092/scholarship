@@ -250,11 +250,14 @@ export default {
   methods: {
     visibilityChanged(isVisible, entry) {
       if (isVisible) {
-        this.$http
-          .post("getPersonalInfo", {
+          let post_data = {
             token: window.sessionStorage.token,
             username: window.sessionStorage.username
-          })
+          }
+          if(this.stu_num !== "")
+            post_data['stu_num'] = this.stu_num
+          this.$http
+          .post("getPersonalInfo", post_data)
           .then(response => {
             let res = JSON.parse(response.bodyText);
             if (res.status === 0) {
@@ -274,9 +277,9 @@ export default {
             }
           })
           .catch(function(response) {
-            console.log("Error");
+            console.log(response);
           });
-      }
+        }
     },
     checkEmpty() {
       for (let [key, value] of Object.entries(this.perinfo)) {
@@ -290,6 +293,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    stu_num: {
+      type: String,
+      default: ""
     }
   },
   data() {

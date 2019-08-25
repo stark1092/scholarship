@@ -141,7 +141,7 @@ class TeacherScore(models.Model):
         # a teacher cannot score a single entry twice
         unique_together = ("apply_id", "teacher_id")
     apply_id = models.ForeignKey(ApplyInfo, on_delete=models.CASCADE)
-    teacher_id = models.IntegerField(db_index=True, null=False, default=0)
+    teacher_id = models.ForeignKey(User, on_delete=models.CASCADE)
     score = models.IntegerField(null=False, default=0)
 
 def LogAction(action, username, ip, details=''):

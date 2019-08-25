@@ -25,10 +25,10 @@
     <el-divider></el-divider>
     <el-row type="flex" justify="start" align="middle">
       <el-col align="start">
-        <h1>申请状态: {{ isApplied ? '已申请' : '未申请'}}</h1>
+        <h1>申请状态: {{ scholarship_id === "" ? "请选择奖学金" : (isApplied ? '已申请' : '未申请') }}</h1>
       </el-col>
     </el-row>
-    <el-row v-if="isApplied" type="flex" justify="start" align="middle" style="margin-top: 10px;">
+    <el-row v-if="isApplied && !stu_num && !is_teacher" type="flex" justify="start" align="middle" style="margin-top: 10px;">
       <el-col align="start">
         <el-button type="danger" @click="withdrawApplyInfo">撤回申请</el-button>
       </el-col>
@@ -42,7 +42,7 @@
     <el-divider></el-divider>
     <el-row type="flex" justify="start">
       <el-col align="start">
-        <PerInfo disabled ref="perinfo"></PerInfo>
+        <PerInfo disabled ref="perinfo" :stu_num="stu_num"></PerInfo>
       </el-col>
     </el-row>
     <el-row type="flex" justify="start" style="margin-top: 30px">
@@ -122,10 +122,10 @@
         <el-button type="success" @click="onSubmit">提交</el-button>
       </el-col>
       <el-col :span="3">
-        <el-button type="info" @click="onSave">暂存</el-button>
+        <el-button type="info" @click="onSave(false)">暂存</el-button>
       </el-col>
     </el-row>
-    <div v-if="is_teacher">
+    <div v-if="is_teacher && isApplied">
       <el-row type="flex" justify="start">
         <el-col :span="2">
           <h1>教师评分</h1>
@@ -160,6 +160,7 @@ export default {
     return {
       formValidationRes: [],
       readOnly: false,
+      apply_id: 0,
       academic_criteria: [],
       academic_note: "",
       work_criteria: [],
@@ -170,6 +171,7 @@ export default {
       teacher_score: 0.0,
       scholarship_id: "",
       isApplied: false,
+      stu_num: this.$route.query.stu_num,
       available_scholarships: []
     };
   },
@@ -207,21 +209,52 @@ export default {
       })
       .catch(response => {
         console.log(response);
-        console.log("Err");
       });
   },
   methods: {
     setFormData(form) {
       Object.keys(form.academic).forEach(key => {
         this.$refs[key][0].setContent(form.academic[key]);
-      })
+      });
       Object.keys(form.work).forEach(key => {
         this.$refs[key][0].setContent(form.work[key]);
-      })
+      });
       this.other_academic_awards = form.other_academic;
     },
     withdrawApplyInfo() {
-
+      this.$http
+        .post("withdrawApplyInfo", {
+          username: window.sessionStorage.username,
+          token: window.sessionStorage.token,
+          data: { scholarship_id: this.scholarship_id }
+        })
+        .then(response => {
+          let res = JSON.parse(response.bodyText);
+          if (res.status === 0) {
+            swal({
+              title: "撤销申请成功",
+              text: res.message,
+              icon: "success",
+              button: "确定"
+            }).then(val => {
+              this.$router.go(0);
+            });
+          } else {
+            swal({
+              title: "出错了",
+              text: res.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (res.status === -1) {
+                that.$router.push("/");
+              }
+            });
+          }
+        })
+        .catch(res => {
+          console.log(response);
+        });
     },
     onSelectScholarship(val) {
       let that = this;
@@ -240,21 +273,31 @@ export default {
             that.work_criteria = res.work_criteria;
             that.work_note = res.work_note;
             that.other_note = res.other_note;
+            that.other_academic_awards = "";
+            that.teacher_score = 0.0;
+            that.isApplied = false;
+            let post_data = { scholarship_id: val }
+            if(that.readOnly && that.stu_num != "") {
+              post_data['stu_num'] = that.stu_num
+            }
             that.$http
               .post("obtainApplyInfo", {
                 username: window.sessionStorage.username,
                 token: window.sessionStorage.token,
-                data: { scholarship_id: val }
+                data: post_data
               })
               .then(response => {
                 let res = JSON.parse(response.bodyText);
                 if (res.status === 0) {
-                  if(res.data !== "") {
-                    that.isApplied = true;
-                    res = JSON.parse(res.data)
-                    that.setFormData(res)
-                  } else
-                    that.isApplied = false;
+                  if (res.data && res.data.json != "") {
+                    that.isApplied = res.data.is_user_confirm;
+                    that.apply_id = res.data.id;
+                    res = JSON.parse(res.data.json);
+                    that.setFormData(res);
+                    if(that.is_teacher) {
+                      that.getTeacherScore();
+                    }
+                  } else that.isApplied = false;
                 } else {
                   swal({
                     title: "出错了",
@@ -269,7 +312,7 @@ export default {
                 }
               })
               .catch(response => {
-                console.log("Err");
+                console.log(response);
               });
           } else {
             swal({
@@ -286,7 +329,6 @@ export default {
         })
         .catch(response => {
           console.log(response);
-          console.log("Err");
         });
     },
     setReadOnly() {
@@ -299,11 +341,60 @@ export default {
         this.readOnly = false;
       }
     },
-    onSubmitTeacherScore() {
-      console.log("Teacher_score is" + this.teacher_score);
+    getTeacherScore() {
+      this.$http.post('getApplyInfoScore', {
+        username: window.sessionStorage.username,
+        token: window.sessionStorage.token,
+        data: {apply_id: this.apply_id}}).then(response => {
+          let res = JSON.parse(response.bodyText)
+          if(res.status === 0) {
+            this.teacher_score = parseFloat(String(res.data))
+          } else {
+            swal({
+              title: "出错了",
+              text: res.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (res.status === -1) {
+                that.$router.push("/");
+              }
+            });
+          }
+        }).catch(res => {
+          console.log(res)
+        });
     },
-    onSave() {
-      // no need to validate form because it is temporarily saved
+    onSubmitTeacherScore() {
+      let that = this;
+      this.$http.post('setApplyInfoScore', {
+        username: window.sessionStorage.username,
+        token: window.sessionStorage.token,
+        data: {apply_id: this.apply_id, score: this.teacher_score}}).then(response => {
+          let res = JSON.parse(response.bodyText)
+          if(res.status === 0) {
+            swal({
+              title: "打分成功",
+              icon: "success",
+              button: "确定"
+            }).then(val => that.$router.go(0));
+          } else {
+            swal({
+              title: "出错了",
+              text: res.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (res.status === -1) {
+                that.$router.push("/");
+              }
+            });
+          }
+        }).catch(res => {
+          console.log(res)
+        });
+    },
+    onSave(user_confirm = false) {
       let that = this;
       let form_res = {
         academic: {},
@@ -317,10 +408,42 @@ export default {
         form_res.work[item.name] = that.$refs[item.name][0].getContent();
       });
       form_res["other_academic"] = that.other_academic_awards;
-      // TODO - send this data to server side
-      // TODO - remember to include scholarship_name and id
-      // because the system supports multiple types of applications simultaneously
-      console.log(JSON.stringify(form_res));
+      that.$http
+        .post("sendApplyInfo", {
+          username: window.sessionStorage.username,
+          token: window.sessionStorage.token,
+          data: {
+            scholarship_id: that.scholarship_id,
+            form: JSON.stringify(form_res),
+            confirm: user_confirm
+          }
+        })
+        .then(response => {
+          let res = JSON.parse(response.bodyText);
+          if (res.status === 0) {
+            swal({
+              title: user_confirm ? "申请成功" : "暂存成功",
+              icon: "success",
+              button: "确定"
+            }).then(val => {
+              that.$router.go(0);
+            });
+          } else {
+            swal({
+              title: "出错了",
+              text: res.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (res.status === -1) {
+                that.$router.push("/");
+              }
+            });
+          }
+        })
+        .catch(response => {
+          console.log(response);
+        });
     },
     onSubmit() {
       if (!this.$refs.perinfo.checkEmpty()) {
@@ -342,56 +465,7 @@ export default {
       );
       Promise.all(that.formValidationRes)
         .then(function() {
-          let form_res = {
-            academic: {},
-            work: {},
-            other_academic: null
-          };
-          that.academic_criteria.forEach(item => {
-            form_res.academic[item.name] = that.$refs[
-              item.name
-            ][0].getContent();
-          });
-          that.work_criteria.forEach(item => {
-            form_res.work[item.name] = that.$refs[item.name][0].getContent();
-          });
-          form_res["other_academic"] = that.other_academic_awards;
-          that.$http
-            .post("sendApplyInfo", {
-              username: window.sessionStorage.username,
-              token: window.sessionStorage.token,
-              data: {
-                scholarship_id: that.scholarship_id,
-                form: JSON.stringify(form_res)
-              }
-            })
-            .then(response => {
-              let res = JSON.parse(response.bodyText);
-              if (res.status === 0) {
-                swal({
-                  title: "申请成功",
-                  icon: "success",
-                  button: "确定"
-                }).then(val => {
-                  that.$router.go(0);
-                });
-              } else {
-                swal({
-                  title: "出错了",
-                  text: res.message,
-                  icon: "error",
-                  button: "确定"
-                }).then(val => {
-                  if (res.status === -1) {
-                    that.$router.push("/");
-                  }
-                });
-              }
-            })
-            .catch(response => {
-              console.log(response);
-              console.log("Err");
-            });
+          that.onSave(true);
         })
         .catch(function() {
           swal({

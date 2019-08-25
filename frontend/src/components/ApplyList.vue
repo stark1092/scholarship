@@ -295,7 +295,7 @@ export default {
               }
             })
             .catch(function(response) {
-              console.log("Error");
+              console.log(response);
             });
         } else {
           swal({title: "错误", text: "请选择完整筛选条件", icon: "error", button: "确定"});

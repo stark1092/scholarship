@@ -704,6 +704,23 @@ def getAvailableScholarshipList(req):
             return JsonResponse(result)
 
 
+@check_login
+@csrf_exempt
+def getScholarshipMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']).apply_score_rule_id.apply_material_id.json
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+
 @check_admin
 @csrf_exempt
 def getScholarshipInfoList(req):
@@ -777,5 +794,56 @@ def switchScholarshipAvailability(req):
         except Exception as e:
             print(e)
             result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+###
+# Application APIs
+###
+@check_login
+@csrf_exempt
+def sendApplyInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']['scholarship_id'])
+            user = models.User.objects.get(username=data['username'])
+            models.ApplyInfo.objects.update_or_create(user_id=user, apply_info_id=model,
+                                                      defaults={'apply_date': datetime.datetime.now(),
+                                                                'score': 0,
+                                                                'user_id': user,
+                                                                'apply_info_id': model,
+                                                                'json': data['data']['form'],
+                                                                'is_score_updated': False,
+                                                                'is_user_confirm': True})
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "申请时发生错误"
+        finally:
+            return JsonResponse(result)
+
+@check_login
+@csrf_exempt
+def obtainApplyInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']['scholarship_id'])
+            user = models.User.objects.get(username=data['username'])
+            try:
+                res = models.ApplyInfo.objects.get(user_id=user, apply_info_id=model)
+                result['data'] = res.json
+            except models.ApplyInfo.DoesNotExist:
+                result['data'] = ""
+            finally:
+                result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
         finally:
             return JsonResponse(result)

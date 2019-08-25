@@ -45,8 +45,12 @@ urlpatterns = [
     ### scholarshipInfo APIs
     path('addScholarshipInfo', views.addScholarshipInfo),
     path('getAvailableScholarshipList', views.getAvailableScholarshipList),
+    path('getScholarshipMaterial', views.getScholarshipMaterial),
     path('getScholarshipInfoList', views.getScholarshipInfoList),
     path('delScholarshipInfo', views.delScholarshipInfo),
     path('editScholarshipInfo', views.editScholarshipInfo),
-    path('switchScholarshipAvailability', views.switchScholarshipAvailability)
+    path('switchScholarshipAvailability', views.switchScholarshipAvailability),
+    ### application APIs
+    path('sendApplyInfo', views.sendApplyInfo),
+    path('obtainApplyInfo', views.obtainApplyInfo)
 ]

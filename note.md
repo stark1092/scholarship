@@ -37,7 +37,7 @@ Always use **POST** request, and the post data is as follows. Note here I didn't
 
 - [x] Get notifications
 
-- [ ] Scholarship application form submission(Just send encoded JSON, and the server stores it. Yuh! That's sufficient. No more conversion is needed.)
+- [x] Scholarship application form submission(Just send encoded JSON, and the server stores it. Yuh! That's sufficient. No more conversion is needed.)
 
 - [ ] Obtain scholarship application information for individual students
 

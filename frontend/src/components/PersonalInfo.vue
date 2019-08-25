@@ -277,6 +277,13 @@ export default {
             console.log("Error");
           });
       }
+    },
+    checkEmpty() {
+      for (let [key, value] of Object.entries(this.perinfo)) {
+        if(String(value).trim() === "")
+          return false;
+      }
+      return true;
     }
   },
   props: {

@@ -59,7 +59,7 @@ export default {
   },
   methods: {
     myUpload(content) {
-      if (this.title === "") {
+      if (this.title.trim() === "") {
         swal({
           title: "错误",
           text: "通知标题不能为空",
@@ -131,7 +131,7 @@ export default {
       this.$refs.upload.submit();
     },
     onSubmit() {
-      if (this.title === "" || this.content === "") {
+      if (this.title.trim() === "" || this.content.trim() === "") {
         swal({
           title: "错误",
           text: "通知标题或内容不能为空",

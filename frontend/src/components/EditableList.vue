@@ -153,6 +153,9 @@ export default {
       }
       return this.model.tableData;
     },
+    setContent(data) {
+      this.model.tableData = data;
+    },
     displayHelpMsg(content) {
       this.$alert(content, "详情", {
         dangerouslyUseHTMLString: true,

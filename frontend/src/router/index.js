@@ -1,4 +1,3 @@
-import Vue from 'vue'
 import Router from 'vue-router'
 import Login from '@/components/Login'
 import ScholarshipMain from '@/components/ScholarshipMain'
@@ -13,7 +12,33 @@ import ApplyList from '@/components/ApplyList'
 import HelloWorld from '@/components/HelloWorld'
 import StucsLogin from '@/components/StucsLogin'
 
-Vue.use(Router)
+const beforeEachHook = (to, from, next) => {
+  if (to.meta.title) {
+    document.title = to.meta.title
+  }
+  if (to.meta.needLogin && window.sessionStorage.token == null) {
+    next({
+      path: '/',
+      query: { message: '未登录，现在跳转到登录页面' }
+    })
+  } else if (to.meta.needAdmin && window.sessionStorage.user_type !== '2') {
+    next({
+      path: '/home'
+    })
+  } else next()
+}
+
+const userTitle = '奖学金系统'
+const adminTitle = '奖学金系统-管理后台'
+const userMeta = {
+  needLogin: true,
+  title: userTitle
+}
+const adminMeta = {
+  needLogin: true,
+  needAdmin: true,
+  title: adminTitle
+}
 
 const router = new Router({
   mode: 'history',
@@ -31,26 +56,27 @@ const router = new Router({
        */
       path: '/home',
       component: ScholarshipMain,
-      meta: {
-        needLogin: true,
-        title: '奖学金系统'
-      },
+      meta: userMeta,
       children: [
         {
           path: 'notify',
-          component: Notify
+          component: Notify,
+          meta: userMeta
         },
         {
           path: 'apply',
-          component: ApplyMain
+          component: ApplyMain,
+          meta: userMeta
         },
         {
           path: 'view_apply',
-          component: ApplyMain
+          component: ApplyMain,
+          meta: userMeta
         },
         {
           path: 'apply_list',
-          component: ApplyList
+          component: ApplyList,
+          meta: userMeta
         }
       ]
     },
@@ -60,35 +86,37 @@ const router = new Router({
        */
       path: '/admin',
       component: ScholarshipAdminMain,
-      meta: {
-        needLogin: true,
-        needAdmin: true,
-        title: '奖学金系统-管理后台'
-      },
+      meta: adminMeta,
       children: [
         {
           path: 'view_notify',
-          component: Notify
+          component: Notify,
+          meta: adminMeta
         },
         {
           path: 'apply_list',
-          component: ApplyList
+          component: ApplyList,
+          meta: adminMeta
         },
         {
           path: 'notify',
-          component: SendNotify
+          component: SendNotify,
+          meta: adminMeta
         },
         {
           path: 'apply_info_settings',
-          component: ApplyInfoSettings
+          component: ApplyInfoSettings,
+          meta: adminMeta
         },
         {
           path: 'apply_score_rule_settings',
-          component: ScoreRuleSettings
+          component: ScoreRuleSettings,
+          meta: adminMeta
         },
         {
           path: 'apply_material_settings',
-          component: MaterialSettings
+          component: MaterialSettings,
+          meta: adminMeta
         }
       ]
     },
@@ -107,22 +135,6 @@ const router = new Router({
   ]
 })
 
-router.beforeEach((to, from, next) => {
-  if (to.meta.title) {
-    document.title = to.meta.title
-  }
-  if (to.meta.needLogin && window.sessionStorage.token == null) {
-    next({
-      path: '/',
-      query: {message: '未登录，现在跳转到登录页面'}
-    })
-  }
-  if (to.meta.needAdmin && window.sessionStorage.user_type !== '2') {
-    next({
-      path: '/home'
-    })
-  }
-  next()
-})
+router.beforeEach(beforeEachHook)
 
 export default router

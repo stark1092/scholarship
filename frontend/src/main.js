@@ -3,6 +3,7 @@
 import Vue from 'vue'
 import ElementUI from 'element-ui'
 import VueResource from 'vue-resource'
+import Router from 'vue-router'
 import VueQuillEditor from 'vue-quill-editor'
 /* eslint-disable */
 import VueObserveVisibility from 'vue-observe-visibility'
@@ -18,6 +19,7 @@ Vue.use(ElementUI)
 Vue.use(VueResource)
 Vue.use(VueQuillEditor)
 Vue.use(VueObserveVisibility)
+Vue.use(Router)
 Vue.config.productionTip = false
 Vue.http.options.root = 'http://127.0.0.1:8000/'
 

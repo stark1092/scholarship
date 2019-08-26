@@ -31,7 +31,7 @@ export default {
         }
       })
       .catch(function(response) {
-        console.log("Error");
+        console.log(response);
       });
   }
 };

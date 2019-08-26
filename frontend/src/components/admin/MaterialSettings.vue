@@ -65,7 +65,6 @@ export default {
       dialogVisible: false,
       confirmDialogVisible: false,
       dialogTitle: "",
-      editing: {}, // the scholarship currently being edited
       materialRule: {
         alias: "",
         json: ""
@@ -81,7 +80,7 @@ export default {
       this.tableData = [];
       let that = this;
       this.$http
-        .post("getMaterial", {
+        .post("getMaterialList", {
           token: window.sessionStorage.token,
           username: window.sessionStorage.username
         })
@@ -98,7 +97,6 @@ export default {
               that.tableData.push(data);
             });
           } else {
-            let that = this;
             swal({
               title: "出错了",
               text: json.message,
@@ -113,10 +111,10 @@ export default {
         })
         .catch(function(response) {
           console.log(response);
-          console.log("Error");
         });
     },
     handleAdd() {
+      this.editCallback = null;
       this.materialRule = {
         alias: "",
         json: ""
@@ -136,7 +134,13 @@ export default {
             console.log(json);
             if (json.status === 0) {
               this.dialogVisible = false;
-              that.load();
+              swal({
+                title: "添加成功",
+                icon: "success",
+                button: "确定"
+              }).then(val => {
+                that.load();
+              });
             } else {
               let that = this;
               swal({
@@ -152,12 +156,11 @@ export default {
             }
           })
           .catch(function(response) {
-            console.log("Error");
+            console.log(response);
           });
       };
     },
     handleSubmit() {
-      this.editing = {};
       if (this.addCallback) {
         this.addCallback();
         this.addCallback = null;
@@ -182,7 +185,13 @@ export default {
             console.log(json);
             if (json.status === 0) {
               this.dialogVisible = false;
-              that.tableData.splice(idx, 1);
+              swal({
+                title: "删除成功",
+                icon: "success",
+                button: "确定"
+              }).then(val => {
+                that.tableData.splice(idx, 1);
+              });
             } else {
               let that = this;
               swal({
@@ -198,51 +207,76 @@ export default {
             }
           })
           .catch(function(response) {
-            console.log("Error");
+            console.log(response);
           });
       };
       this.confirmDialogVisible = true;
     },
     handleEdit(idx, row) {
-      this.editing = row;
+      this.addCallback = null;
       this.dialogTitle = "编辑规则" + row.alias;
       this.dialogVisible = true;
       this.materialRule.alias = this.tableData[idx].alias;
-      this.materialRule.json = this.tableData[idx].json;
       let that = this;
-      this.editCallback = () => {
-        let data = this.materialRule;
-        data["pk"] = this.tableData[idx]["pk"];
-        this.$http
-          .post("editMaterial", {
-            token: window.sessionStorage.token,
-            username: window.sessionStorage.username,
-            data: data
-          })
-          .then(response => {
-            let json = JSON.parse(response.bodyText);
-            console.log(json);
-            if (json.status === 0) {
-              this.dialogVisible = false;
-              that.load();
-            } else {
-              let that = this;
-              swal({
-                title: "出错了",
-                text: json.message,
-                icon: "error",
-                button: "确定"
-              }).then(val => {
-                if (json.status === -1) {
-                  that.$router.push("/");
-                }
-              });
-            }
-          })
-          .catch(function(response) {
-            console.log("Error");
-          });
-      };
+      this.$http
+        .post("getMaterial", {
+          username: window.sessionStorage.username,
+          token: window.sessionStorage.token,
+          data: this.tableData[idx].pk
+        })
+        .then(response => {
+          let res = JSON.parse(response.bodyText);
+          if (res.status === 0) {
+            that.materialRule.json = res.data;
+            that.editCallback = () => {
+              let data = that.materialRule;
+              data["pk"] = that.tableData[idx]["pk"];
+              that.$http
+                .post("editMaterial", {
+                  token: window.sessionStorage.token,
+                  username: window.sessionStorage.username,
+                  data: data
+                })
+                .then(response => {
+                  let json = JSON.parse(response.bodyText);
+                  console.log(json);
+                  if (json.status === 0) {
+                    swal({ title: "修改成功", icon: "success", button: "确定"});
+                    that.dialogVisible = false;
+                    that.load();
+                  } else {
+                    swal({
+                      title: "出错了",
+                      text: json.message,
+                      icon: "error",
+                      button: "确定"
+                    }).then(val => {
+                      if (json.status === -1) {
+                        that.$router.push("/");
+                      }
+                    });
+                  }
+                })
+                .catch(function(response) {
+                  console.log(response);
+                });
+            };
+          } else {
+            swal({
+              title: "出错了",
+              text: json.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (json.status === -1) {
+                that.$router.push("/");
+              }
+            });
+          }
+        })
+        .catch(response => {
+          console.log(response);
+        });
     },
     cancelDelete() {
       this.deleteCallback = null;

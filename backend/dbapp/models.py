@@ -109,7 +109,6 @@ class ApplyInfoSetting(models.Model):
     apply_info_id = models.AutoField(primary_key=True)
     scholarship_name = models.CharField(db_index=True, max_length=200, unique=True)
     apply_score_rule_id = models.ForeignKey(ApplyScoreRuleSetting, on_delete=models.CASCADE)
-    apply_material_id = models.ForeignKey(ApplyMaterialSetting, on_delete=models.CASCADE)
     set_time = models.DateTimeField(auto_now_add=True)
     can_apply = models.BooleanField(default=False)
 
@@ -132,19 +131,22 @@ class ApplyInfo(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     json = models.TextField()
     apply_info_id = models.ForeignKey(ApplyInfoSetting, on_delete=models.CASCADE)
-    apply_score_rule_id = models.ForeignKey(ApplyScoreRuleSetting, on_delete=models.CASCADE)
-    apply_material_id = models.ForeignKey(ApplyMaterialSetting, on_delete=models.CASCADE)
     apply_date = models.DateTimeField(db_index=True, auto_now_add=True)
-    score = models.IntegerField(db_index=True, null=False, default=0)
+    score = models.FloatField(db_index=True, null=False, default=0)
+    academic_score = models.FloatField(null=False, default=0)
+    work_score = models.FloatField(null=False, default=0)
+    wrong_time = models.BooleanField(default=False)
+    extra_info = models.TextField()
     is_score_updated = models.BooleanField(default=False)
     is_user_confirm = models.BooleanField(default=False)  ### If user saves temporarily, this field will be False
+    report_num = models.IntegerField(default=0)
 
 class TeacherScore(models.Model):
     class Meta:
         # a teacher cannot score a single entry twice
         unique_together = ("apply_id", "teacher_id")
     apply_id = models.ForeignKey(ApplyInfo, on_delete=models.CASCADE)
-    teacher_id = models.IntegerField(db_index=True, null=False, default=0)
+    teacher_id = models.ForeignKey(User, on_delete=models.CASCADE)
     score = models.IntegerField(null=False, default=0)
 
 def LogAction(action, username, ip, details=''):

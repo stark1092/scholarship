@@ -16,6 +16,7 @@
     "node-sass": "^4.12.0",
     "sweetalert": "^2.1.2",
     "vue": "^2.5.2",
+    "vue-observe-visibility": "^0.4.4",
     "vue-quill-editor": "^3.0.6",
     "vue-resource": "^1.5.1",
     "vue-router": "^3.0.1"

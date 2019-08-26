@@ -25,10 +25,36 @@ urlpatterns = [
     path('getPersonalInfo', views.getPersonalInfo),
     path('changePersonalInfo', views.changePersonalInfo),
     path('getNotify', views.getNotify),
+    path('sendNotify', views.sendNotify),
+    path('sendNotifyUpload', views.sendNotifyUpload),
+    path('delNotify', views.delNotify),
     path('filterAndSort', views.filterAndSort),
     path('changePassword', views.changePassword),
+    ### material APIs
     path('addMaterial', views.addMaterial),
     path('getMaterial', views.getMaterial),
+    path('getMaterialList',views.getMaterialList),
     path('delMaterial', views.delMaterial),
-    path('editMaterial', views.editMaterial)
+    path('editMaterial', views.editMaterial),
+    ### scoreRule APIs
+    path('addScoreRule', views.addScoreRule),
+    path('getScoreRule', views.getScoreRule),
+    path('getScoreRuleList', views.getScoreRuleList),
+    path('delScoreRule', views.delScoreRule),
+    path('editScoreRule', views.editScoreRule),
+    ### scholarshipInfo APIs
+    path('addScholarshipInfo', views.addScholarshipInfo),
+    path('getAvailableScholarshipList', views.getAvailableScholarshipList),
+    path('getScholarshipMaterial', views.getScholarshipMaterial),
+    path('getScholarshipInfoList', views.getScholarshipInfoList),
+    path('delScholarshipInfo', views.delScholarshipInfo),
+    path('editScholarshipInfo', views.editScholarshipInfo),
+    path('switchScholarshipAvailability', views.switchScholarshipAvailability),
+    ### application APIs
+    path('sendApplyInfo', views.sendApplyInfo),
+    path('obtainApplyInfo', views.obtainApplyInfo),
+    path('withdrawApplyInfo', views.withdrawApplyInfo),
+    ### teacher score APIs
+    path('setApplyInfoScore', views.setApplyInfoScore),
+    path('getApplyInfoScore', views.getApplyInfoScore)
 ]

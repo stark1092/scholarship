@@ -50,6 +50,18 @@ class ItemScorer(object):
             if(not isinstance(kwargs['time_validator'], list)):
                 raise TypeError("Invalid TimeValidator type, expected list")
             self.timeValidators = kwargs['time_validator']
+        if('item_counter_rule' in kwargs.keys()):
+            self.counter_mode = kwargs['item_counter_rule']['mode']
+            if(self.counter_mode == "category"):
+                self.counter_fmt = kwargs['item_counter_rule']['fmt']
+                self.count = {}
+                for item in kwargs['item_counter_rule']['fields']:
+                    self.count[item] = 0
+            elif(self.counter_mode == "count"):
+                self.count = 0
+                pass
+            else:
+                raise NotImplementedError("Unsupported counter mode in ItemScorer")
         self.time_field = rules_dict['time_field']
         self.mode = rules_dict['mode']
         if('limit' in rules_dict.keys()):
@@ -78,11 +90,17 @@ class ItemScorer(object):
         return string
 
     def getScore(self, item_list):
+        if(hasattr(self, 'counter_mode')):
+            if(isinstance(self.count, int)):
+                self.count = 0
+            elif(isinstance(self.count, dict)):
+                for k in self.count.keys():
+                    self.count[k] = 0
         if(not isinstance(item_list, list)):
             raise TypeError("Invalid item list, expected list type")
         tot_score = 0.0
         wrong_time = False
-        if(self.mode == 'value'):  ## do not eval one by one
+        if(self.mode == 'value'):
             cnt = 0
             for item in item_list:
                 flag = False
@@ -94,6 +112,14 @@ class ItemScorer(object):
                         break
                 if(flag):
                     continue
+                if(hasattr(self, 'counter_mode')):
+                    # begin count
+                    if(self.counter_mode == "count"):
+                        self.count += 1
+                    elif(self.counter_mode == "category"):
+                        t = self.__formulaReplacer(self.counter_fmt, **item)
+                        if(t in self.count.keys()):
+                            self.count[t] += 1
                 cnt += 1
             if(cnt > 0):
                 try:
@@ -114,6 +140,14 @@ class ItemScorer(object):
                 if(flag):
                     continue
                 else:
+                    if(hasattr(self, 'counter_mode')):
+                        # begin count
+                        if(self.counter_mode == "count"):
+                            self.count += 1
+                        elif(self.counter_mode == "category"):
+                            t = self.__formulaReplacer(self.counter_fmt, **item)
+                            if(t in self.count.keys()):
+                                self.count[t] += 1
                     if(self.mode == 'lut'):
                         pat = self.__formulaReplacer(self.fmt, **item)
                         if(pat in self.lut.keys()):
@@ -138,7 +172,10 @@ class ItemScorer(object):
                         tot_score += v
         if(hasattr(self, 'limit')):
             tot_score = min(tot_score, eval(self.limit))
-        return tot_score, wrong_time
+        if(hasattr(self, 'counter_mode')):
+            return tot_score, (wrong_time, self.count)
+        else:
+            return tot_score, wrong_time
 
 class ScoreCalculator(object):
     def __formulaReplacer(self, string, **kwargs):
@@ -147,6 +184,7 @@ class ScoreCalculator(object):
             string = string.replace("$" + key, "'" + str(value) + "'")
         return string
     def __init__(self, rule_dict):
+        print("Initializing scorer...")
         self.timeValidators = []
         if('time_validator' in rule_dict.keys()):
             for item in rule_dict['time_validator']:
@@ -154,41 +192,70 @@ class ScoreCalculator(object):
         self.academic_scorer = {}
         self.work_scorer = {}
         self.final_formula = rule_dict['total']['formula']
+        self.has_counter = ('item_counter' in rule_dict.keys())
+        if(self.has_counter):
+            self.counter_dict = rule_dict['item_counter']
         for key, item in rule_dict['academic'].items():
             time_validator = self.timeValidators if 'time_validator_filter' not in item.keys() else []
             if('time_validator' in rule_dict.keys() and 'time_validator_filter' in item.keys()):
                 for idx in item['time_validator_filter']:
                     time_validator.append(self.timeValidators[idx])
-            self.academic_scorer[key] = ItemScorer(item, time_validator=time_validator)
+            if('item_counter' in rule_dict.keys() and 'academic' in rule_dict['item_counter'].keys()
+                and key in rule_dict['item_counter']['academic'].keys()):
+                self.academic_scorer[key] = ItemScorer(item, time_validator=time_validator, item_counter_rule=rule_dict['item_counter']['academic'][key])
+            else:
+                self.academic_scorer[key] = ItemScorer(item, time_validator=time_validator)
+
         for key, item in rule_dict['work'].items():
             time_validator = self.timeValidators if 'time_validator_filter' not in item.keys() else []
             if('time_validator' in rule_dict.keys() and 'time_validator_filter' in item.keys()):
                 for idx in item['time_validator_filter']:
                     time_validator.append(self.timeValidators[idx])
-            self.work_scorer[key] = ItemScorer(item, time_validator=time_validator)
+            if('item_counter' in rule_dict.keys() and 'work' in rule_dict['item_counter'].keys()
+                and key in rule_dict['item_counter']['work'].keys()):
+                self.work_scorer[key] = ItemScorer(item, time_validator=time_validator, item_counter_rule=rule_dict['item_counter']['work'][key])
+            else:
+                self.work_scorer[key] = ItemScorer(item, time_validator=time_validator)
+        print("Scorer initialization done...")
+            
 
     def getScore(self, item_dict):
         ## academic_score
         academic = 0.0
+        counter_res = {'academic': {}, 'work': {}}
+        wrong_time = False
         for key, item in item_dict['academic'].items():
             score, _ = self.academic_scorer[key].getScore(item)
             academic += score
+            if(self.has_counter and 'academic' in self.counter_dict.keys() and key in self.counter_dict['academic'].keys()):
+                counter_res['academic'][key] = _[1]
+                if(_[0]):
+                    wrong_time = True
+            elif(_):
+                wrong_time = True
         work = 0.0
         for key, item in item_dict['work'].items():
             score, _ = self.work_scorer[key].getScore(item)
             work += score
-        print("academic: %f, job: %f" % (academic, work))
+            if(self.has_counter and 'work' in self.counter_dict.keys() and key in self.counter_dict['work'].keys()):
+                counter_res['work'][key] = _[1]
+                if(_[0]):
+                    wrong_time = True
+            elif(_):
+                wrong_time = True
         formula = self.__formulaReplacer(self.final_formula, academic=academic, work=work)
         try:
-            return eval(formula)
+            return eval(formula), academic, work, counter_res, wrong_time
         except Exception as e:
             print(e)
-            return 0.0
+            return 0.0, academic, work, counter_res, wrong_time
 
 
 """
 Unit test
 """
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
 if(__name__ == "__main__"):
     ### TEST ITEM_SCORER
     print("Start Unit Test")
@@ -249,18 +316,23 @@ if(__name__ == "__main__"):
         score, wrong_time = scorer.getScore(items)
         assert(score == 3 and wrong_time == False)
         print("Pass")
-    test1()
-    test2()
-    test3()
-    test4()
-    test5()
-    test6()
-    with open("default_template.json", "r") as f:
+    executor = ThreadPoolExecutor(max_workers=6)
+    executor.submit(test1)
+    executor.submit(test2)
+    executor.submit(test3)
+    executor.submit(test4)
+    executor.submit(test5)
+    executor.submit(test6)
+    executor.shutdown(True)
+    if(len(sys.argv) == 1):
+        print("No input JSON specific, exit")
+        sys.exit(0)
+    with open(sys.argv[1], "r") as f:
         rule = JSON.load(f)
         rule = rule['score_rule_settings']['json_debug']
         rule = JSON.loads(rule)
         scorer = ScoreCalculator(rule)
         itemJson = "{\"academic\":{\"conf_paper\":[{\"seq\":\"0\",\"author\":\"aaa\",\"isFirstAuthor\":\"1\",\"ccfRank\":\"A\",\"journal\":\"\",\"paper\":\"aaaa\",\"date\":\"2017-04-30T16:00:00.000Z\",\"numPages\":\"1\",\"category\":\"full\",\"isLastYear\":\"1\",\"conf\":\"aaaa\"},{\"seq\":\"1\",\"author\":\"aaaa\",\"isFirstAuthor\":\"1\",\"ccfRank\":\"B\",\"journal\":\"\",\"paper\":\"aaa\",\"date\":\"2016-06-08T16:00:00.000Z\",\"numPages\":\"1\",\"category\":\"full\",\"isLastYear\":\"0\",\"conf\":\"aaa\"},{\"seq\":\"2\",\"author\":\"aaaa\",\"isFirstAuthor\":\"1\",\"ccfRank\":\"B\",\"journal\":\"\",\"paper\":\"aaa\",\"date\":\"2018-06-06T16:00:00.000Z\",\"numPages\":\"1\",\"category\":\"full\",\"isLastYear\":\"0\",\"conf\":\"aaa\"},{\"seq\":\"3\",\"author\":\"aaa\",\"isFirstAuthor\":\"1\",\"ccfRank\":\"B\",\"journal\":\"\",\"paper\":\"aaa\",\"date\":\"2017-06-13T16:00:00.000Z\",\"numPages\":\"1\",\"category\":\"short\",\"isLastYear\":\"0\",\"conf\":\"aaa\"}],\"journal_paper\":[{\"seq\":\"0\",\"author\":\"aaa\",\"isFirstAuthor\":\"1\",\"ccfRank\":\"A\",\"journal\":\"aa\",\"paper\":\"aaaa\",\"date\":\"2018-05-02T16:00:00.000Z\",\"pagePos\":\"1\",\"numPages\":\"2\",\"category\":\"full\",\"isLastYear\":\"1\"},{\"seq\":\"1\",\"author\":\"a\",\"isFirstAuthor\":\"1\",\"ccfRank\":\"A\",\"journal\":\"aaa\",\"paper\":\"aa\",\"date\":\"2018-12-22T16:00:00.000Z\",\"pagePos\":\"1\",\"numPages\":\"1\",\"category\":\"full\",\"isLastYear\":\"1\"},{\"seq\":\"2\",\"author\":\"v\",\"isFirstAuthor\":\"1\",\"ccfRank\":\"A\",\"journal\":\"aaaa\",\"paper\":\"aaa\",\"date\":\"2019-04-21T16:00:00.000Z\",\"pagePos\":\"1\",\"numPages\":\"1\",\"category\":\"full\",\"isLastYear\":\"1\"}],\"patent\":[],\"project\":[],\"intl_standard\":[],\"conf_award\":[]},\"work\":{\"post\":[{\"seq\":\"0\",\"name\":\"aaaaaaa\",\"class\":\"D\",\"startDate\":\"2015-03-10T16:00:00.000Z\",\"endDate\":\"2015-08-12T16:00:00.000Z\",\"monthFirst\":0,\"monthSecond\":6},{\"seq\":\"1\",\"name\":\"a\",\"class\":\"D\",\"startDate\":\"2015-09-15T16:00:00.000Z\",\"endDate\":\"2016-08-29T16:00:00.000Z\",\"monthFirst\":6,\"monthSecond\":6},{\"seq\":\"2\",\"name\":\"a\",\"class\":\"D\",\"startDate\":\"2016-09-04T16:00:00.000Z\",\"endDate\":\"2017-08-29T16:00:00.000Z\",\"monthFirst\":6,\"monthSecond\":6},{\"seq\":\"3\",\"name\":\"a\",\"class\":\"D\",\"startDate\":\"2017-09-17T16:00:00.000Z\",\"endDate\":\"2018-08-16T16:00:00.000Z\",\"monthFirst\":6,\"monthSecond\":6}],\"accu_pro\":[{\"seq\":\"0\",\"class\":\"H\",\"content\":\"bbbbbbbbbbbbbbb\",\"date\":\"2014-12-11T16:00:00.000Z\"},{\"seq\":\"1\",\"class\":\"L\",\"content\":\"aa\",\"date\":\"2018-09-16T16:00:00.000Z\"},{\"seq\":\"2\",\"class\":\"L\",\"content\":\"a\",\"date\":\"2017-09-11T16:00:00.000Z\"},{\"seq\":\"3\",\"class\":\"L\",\"content\":\"aa\",\"date\":\"2016-05-11T16:00:00.000Z\"},{\"seq\":\"4\",\"class\":\"L\",\"content\":\"aaa\",\"date\":\"2015-04-07T16:00:00.000Z\"}]},\"other_academic\":\"aaaaaaaaaaaaaa\"}"
         items = JSON.loads(itemJson)
-        score = scorer.getScore(items)
-        print("Total score: {}".format(score))
+        score_res = scorer.getScore(items)
+        print(score_res)

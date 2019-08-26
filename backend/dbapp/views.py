@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from dbapp import models
 import requests
 import urllib
+from django.utils.timezone import utc
 import urllib.parse
 import json
 from config import *
@@ -13,7 +14,42 @@ from django.forms.models import model_to_dict
 import uuid
 import sys
 import datetime
+import mammoth
+from django.db import connections
+from dbapp import scorer
+import time
 sys.path.append('../')
+
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
+scorer_executor = ThreadPoolExecutor(max_workers=scorer_workers)
+scorer_map = {}
+
+def scorerInBackGround(*arg, **kwargs):
+    user_id = kwargs['user']
+    apply_info_id = kwargs['apply_info']
+    print("Start scoring user:{}, apply:{}...".format(user_id, apply_info_id))
+    time.sleep(0.1)
+    try:
+        user = models.User.objects.get(user_id=user_id)
+        apply_info = models.ApplyInfoSetting.objects.get(apply_info_id=apply_info_id)
+        entry = models.ApplyInfo.objects.get(user_id=user,apply_info_id=apply_info)
+        if(apply_info.apply_score_rule_id.apply_score_rule_id not in scorer_map):
+            scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id] = scorer.ScoreCalculator(json.loads(apply_info.apply_score_rule_id.json))
+        print("Get entry succesfully, evaluating...")
+        score_res = scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id].getScore(json.loads(entry.json))
+        entry.score = score_res[0]
+        entry.academic_score = score_res[1]
+        entry.work_score = score_res[2]
+        entry.extra_info = score_res[3]
+        entry.wrong_time = score_res[4]
+        entry.is_score_updated = True
+        entry.save()
+        print(score_res)
+    except Exception as e:
+        print(e)
+    finally:
+        connections.close_all()
 
 # utils start
 sessionUser = {}  # token - username
@@ -28,7 +64,7 @@ def createToken(username):
             sessionUser.pop(token, None)
     uid = uuid.uuid4()
     sessionUser[str(uid)] = {'username': username,
-                        'create_time': datetime.datetime.now()}
+                             'create_time': datetime.datetime.now()}
     userSession[username] = str(uid)
     return uid
 
@@ -64,6 +100,7 @@ def check_login(f):
         else:
             return JsonResponse({'status': -1, 'message': '用户未登录'})
     return inner
+
 
 def check_teacher(f):
     @wraps(f)
@@ -110,6 +147,7 @@ def check_admin(f):
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
+
 def check_admin_teacher(f):
     @wraps(f)
     def inner(req, *arg, **kwargs):
@@ -132,11 +170,13 @@ def check_admin_teacher(f):
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
+
 def getIpAddr(req):
     if 'HTTP_X_FORWARDED_FOR' in req.META.keys():
         return req.META['HTTP_X_FORWARDED_FOR']
     else:
         return req.META['REMOTE_ADDR']
+
 
 """
 Example return data of this API
@@ -146,6 +186,8 @@ Example return data of this API
 'research_lab': '', 
 'year': 2017, 'class_number': x, 'mobile': '', 'groups': ['']}
 """
+
+
 def getStudentInfo(token):
     res = requests.get(
         'https://stu.cs.tsinghua.edu.cn/api/v2/userinfo?access_token=' + token)
@@ -200,7 +242,7 @@ def userlogin_stucs_cb(req):
                         'email': stu['email'],
                         'student_id': stu['student_id'],
                         'is_project_started': False}
-            ## Allow teachers to login via Accounts9
+            # Allow teachers to login via Accounts9
             if(stu['student_type'] == 'staff'):
                 stu_info['user_type'] = 1
             try:
@@ -259,10 +301,13 @@ def getPersonalInfo(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            res = models.User.objects.get(username=data['username'])
-            models.LogAction('getPersonalInfo', res, getIpAddr(req))
+            res = None
+            if('stu_num' in data.keys()):
+                res = models.User.objects.get(student_id=data['stu_num'])
+            else:
+                res = models.User.objects.get(username=data['username'])
             res = model_to_dict(res)
-            res.pop('password') ## !important
+            res.pop('password')  # !important
             res.pop('user_id')
             result['status'] = 0
             result['data'] = res
@@ -272,6 +317,7 @@ def getPersonalInfo(req):
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
+
 @check_login
 @csrf_exempt
 def changePersonalInfo(req):
@@ -279,30 +325,33 @@ def changePersonalInfo(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            data['data']['last_modify'] = datetime.datetime.now()
-            res = models.User.objects.filter(username=data['username']).update(**data['data'])
+            data['data']['last_modify'] = datetime.datetime.utcnow().replace(tzinfo=utc)
+            res = models.User.objects.filter(
+                username=data['username']).update(**data['data'])
             result['status'] = 0
-            models.LogAction('changePersonalInfo', models.User.objects.get(username=data['username']), getIpAddr(req))
+            models.LogAction('changePersonalInfo', models.User.objects.get(
+                username=data['username']), getIpAddr(req))
             return JsonResponse(result)
         except Exception as e:
             print(e)
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
+
 @check_login
 @csrf_exempt
 def getNotify(req):
     if(req.method == 'POST'):
         result = {'status': 1}
-        #testNotify()
         try:
             data = json.loads(req.body)
             notify = []
-            notifies = models.Notify.objects.all()
+            notifies = models.Notify.objects.all().order_by('-date')
             for each_notify in notifies:
-                notify.append({'title' : each_notify.title,
-                            'date' : each_notify.date,
-                            'link' : each_notify.link})
+                notify.append({'title': each_notify.title,
+                               'date': each_notify.date,
+                               'link': each_notify.link,
+                               'id': each_notify.id})
             result['data'] = notify
             result['status'] = 0
             return JsonResponse(result)
@@ -311,12 +360,80 @@ def getNotify(req):
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
+
+@check_admin
+@csrf_exempt
+def delNotify(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.Notify.objects.filter(
+                id=data['data']['id'], title=data['data']['title']).delete()
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+        finally:
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def sendNotify(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.Notify.objects.create(
+                title=data['data']['title'], link=data['data']['link'])
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+        finally:
+            return JsonResponse(result)
+
+
+@csrf_exempt
+def sendNotifyUpload(req):
+    if(req.method == 'POST'):
+        try:
+            result = {'status': 1}
+            username = req.POST.get('username')
+            token = req.POST.get('token')
+            f = req.FILES.get('file')
+            title = req.POST.get('title')
+            if(validateToken(token, token_exp_time) == username):
+                user = models.User.objects.get(username=username)
+                if(user.user_type == 2):
+                    updateToken(token)
+                    # do real work here
+                    f.seek(0)
+                    converted = mammoth.convert_to_html(f)
+                    html = converted.value
+                    models.Notify.objects.create(
+                        title=title, link=converted.value)
+                    result['status'] = 0
+                else:
+                    result['message'] = '无操作权限'
+            else:
+                result['status'] = -1
+                result['message'] = '用户未登录'
+        except Exception as e:
+            print(e)
+            result['message'] = '请求无效'
+        finally:
+            return JsonResponse(result)
+
+
 @check_login
 @csrf_exempt
 def filterAndSort(req):
     if(req.method == 'POST'):
-        result = {'status': 1}
-        testApplicant()
+        result = {'status': 1, 'message': 'Not implemented'}
+        # TODO - edit this
+        return JsonResponse(result)
         try:
             data = json.loads(req.body)
             filters = {}
@@ -329,16 +446,20 @@ def filterAndSort(req):
             else:
                 students = models.User.objects.filter(**filters)
             if data['data']['scholarship_name'] == '':
-                 applicants = models.ApplyInfo.objects.filter(user_id__in = students)
+                applicants = models.ApplyInfo.objects.filter(
+                    user_id__in=students)
             else:
-                names = models.ApplyInfoSetting.objects.filter(scholarship_name = data['data']['scholarship_name'])
-                applicants = models.ApplyInfo.objects.filter(apply_info_id__in = names, user_id__in = students)
+                names = models.ApplyInfoSetting.objects.filter(
+                    scholarship_name=data['data']['scholarship_name'])
+                applicants = models.ApplyInfo.objects.filter(
+                    apply_info_id__in=names, user_id__in=students)
             cnt = 0
             upload_info = []
             for applicant in applicants:
                 upload_info.append(json.loads(applicant.json))
             if data['data']['ordering'] != '':
-                upload_info = sorted(upload_info, key = lambda score:score[data['data']['ordering']], reverse = True)
+                upload_info = sorted(
+                    upload_info, key=lambda score: score[data['data']['ordering']], reverse=True)
             for seq in range(len(upload_info)):
                 upload_info[seq]['seq'] = str(seq)
             result['applicant'] = upload_info
@@ -349,89 +470,7 @@ def filterAndSort(req):
             print(e)
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
-#因为评分与json还没有很好的结合起来，因此暂时采用这种方法。以下代码为test
 
-## TODO - remove test codes later
-def testApplicant():
-    models.User.objects.all().delete()
-    user = models.User(username = 'jzt',
-                        password = '123456',
-                        name = '金子童',
-                        student_id = 2015011739,
-                        user_type = 0,
-                        class_name = 'asdfg',
-                        gender = 'male',
-                        department = 'media',
-                        student_type = 'master',
-                        grade = '1',
-                        student_status = 'cst',
-                        political_status = 'party',
-                        ethnic_group = 'asdf',
-                        instructor = 'asdf',
-                        email = '123456@qq.com',
-                        mobile = '123432',
-                        address = 'asdfdas',
-                        post_code = '123456',
-                        is_project_started = False)
-    user.save()
-    models.ApplyMaterialSetting.objects.all().delete()
-    ms = models.ApplyMaterialSetting(
-        alias = 'example',
-        json = 'docx'
-    )
-    ms.save()
-    models.ApplyScoreRuleSetting.objects.all().delete()
-    rs = models.ApplyScoreRuleSetting(
-        alias = 'example',
-        json = '+1',
-        apply_material_id = ms
-    )
-    rs.save()
-    models.ApplyInfoSetting.objects.all().delete()
-    ais = models.ApplyInfoSetting(
-        scholarship_name = 's1',
-        apply_score_rule_id = rs,
-        apply_material_id = ms,
-        can_apply = True
-    )
-    ais.save()
-    models.ApplyInfo.objects.all().delete()
-    ai = models.ApplyInfo(
-        user_id = user,
-        json = '{"student_num": "123456",\
-                    "name": "金子童",\
-                    "a_paper": "1",\
-                    "b_paper": "2",\
-                    "c_paper": "3",\
-                    "o_paper": "4",\
-                    "patent": "0",\
-                    "academic_score": "5",\
-                    "work_score": "5",\
-                    "teacher_score": "5",\
-                    "tot_score": "10",\
-                    "num_report": "0",\
-                    "link": {\
-                        "link": "123456",\
-                        "label": "点击查看"\
-                    }\
-                }',
-        apply_info_id = ais,
-        apply_score_rule_id = rs,
-        apply_material_id = ms,
-        score = 100,
-        is_score_updated = True,
-        is_user_confirm = True
-    )
-    ai.save()
-
-def testNotify():
-    models.Notify.objects.all().delete()
-    for i in range(5):
-        notify = models.Notify(title = 'test' + str(i),
-                    date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    link = 'link' + str(i))
-        notify.save()
-    models.Notify.objects.filter(title='test2').delete()
 
 @check_admin_teacher
 @csrf_exempt
@@ -458,6 +497,11 @@ def changePassword(req):
             result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
+
+#####
+# Material APIs
+#####
+
 @check_admin
 @csrf_exempt
 def addMaterial(req):
@@ -467,8 +511,8 @@ def addMaterial(req):
             data = json.loads(req.body)
             data = data['data']
             ms = models.ApplyMaterialSetting(
-                alias = data['alias'],
-                json = data['json']
+                alias=data['alias'],
+                json=data['json']
             )
             ms.save()
             result['status'] = 0
@@ -478,6 +522,7 @@ def addMaterial(req):
             result['message'] = '操作失败'
             return JsonResponse(result)
 
+
 @check_admin
 @csrf_exempt
 def getMaterial(req):
@@ -485,13 +530,32 @@ def getMaterial(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
+            result['data'] = models.ApplyMaterialSetting.objects.get(
+                apply_material_id=data['data']).json
             result['status'] = 0
-            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all())
-            return JsonResponse(result)
         except Exception as e:
             print(e)
             result['message'] = '操作失败'
+        finally:
             return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def getMaterialList(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = serializers.serialize('json', models.ApplyMaterialSetting.objects.all(
+            ).order_by("-set_time"), fields=('apply_material_id', 'alias', 'set_time'))
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
 
 @check_admin
 @csrf_exempt
@@ -500,13 +564,15 @@ def delMaterial(req):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            models.ApplyMaterialSetting.objects.filter(apply_material_id=data['data']).delete()
+            models.ApplyMaterialSetting.objects.filter(
+                apply_material_id=data['data']).delete()
             result['status'] = 0
             return JsonResponse(result)
         except Exception as e:
             print(e)
             result['message'] = '操作失败'
             return JsonResponse(result)
+
 
 @check_admin
 @csrf_exempt
@@ -516,9 +582,10 @@ def editMaterial(req):
         try:
             data = json.loads(req.body)
             data = data['data']
-            model = models.ApplyMaterialSetting.objects.get(apply_material_id=data['pk'])
-            model.alias=data['alias']
-            model.json=data['json']
+            model = models.ApplyMaterialSetting.objects.get(
+                apply_material_id=data['pk'])
+            model.alias = data['alias']
+            model.json = data['json']
             model.save(force_update=True)
             result['status'] = 0
             return JsonResponse(result)
@@ -527,3 +594,367 @@ def editMaterial(req):
             result['message'] = '操作失败'
             return JsonResponse(result)
 
+#####
+# ScoreRule APIs
+#####
+
+
+@check_admin
+@csrf_exempt
+def addScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ms = models.ApplyMaterialSetting.objects.get(
+                apply_material_id=data['apply_material_id'])
+            srs = models.ApplyScoreRuleSetting(
+                alias=data['alias'],
+                json=data['json'],
+                apply_material_id=ms
+            )
+            srs.save()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def getScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = models.ApplyScoreRuleSetting.objects.get(
+                apply_score_rule_id=data['data']).json
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def getScoreRuleList(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = serializers.serialize('json', models.ApplyScoreRuleSetting.objects.all().order_by(
+                "-set_time"), fields=('apply_score_rule_id', 'alias', 'set_time', 'apply_material_id'))
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def delScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.ApplyScoreRuleSetting.objects.filter(
+                apply_score_rule_id=data['data']).delete()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def editScoreRule(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ms = models.ApplyMaterialSetting.objects.get(
+                apply_material_id=data['apply_material_id'])
+            model = models.ApplyScoreRuleSetting.objects.get(
+                apply_score_rule_id=data['pk'])
+            model.apply_material_id = ms
+            model.alias = data['alias']
+            model.json = data['json']
+            model.save(force_update=True)
+            ### refresh scorer if already in memory
+            ### TODO - refresh user application entries
+            if(data['pk'] in scorer_map.keys()):
+                scorer_map[data['pk']] = scorer.ScoreCalculator(json.loads(data['json']))
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+#####
+# Scholarship APIs
+#####
+
+
+@check_admin
+@csrf_exempt
+def addScholarshipInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            srs = models.ApplyScoreRuleSetting.objects.get(
+                apply_score_rule_id=data['score_rule'])
+            models.ApplyInfoSetting.objects.create(
+                scholarship_name=data['scholarship_name'],
+                apply_score_rule_id=srs,
+                can_apply=False,
+            )
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+
+@check_login
+@csrf_exempt
+def getAvailableScholarshipList(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = serializers.serialize('json', models.ApplyInfoSetting.objects.filter(can_apply=True).order_by(
+                "-set_time"), fields=('scholarship_name', 'apply_info_id', 'set_time', 'apply_score_rule_id'))
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+
+@check_login
+@csrf_exempt
+def getScholarshipMaterial(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']).apply_score_rule_id.apply_material_id.json
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def getScholarshipInfoList(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = serializers.serialize(
+                'json', models.ApplyInfoSetting.objects.all().order_by("-set_time"))
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def delScholarshipInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            models.ApplyInfoSetting.objects.filter(
+                apply_info_id=data['data']).delete()
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def editScholarshipInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            srs = models.ApplyScoreRuleSetting.objects.get(
+                apply_score_rule_id=data['score_rule'])
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['pk'])
+            model.apply_score_rule_id = srs
+            model.scholarship_name = data['scholarship_name']
+            model.save(force_update=True)
+            result['status'] = 0
+            return JsonResponse(result)
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def switchScholarshipAvailability(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['pk'])
+            model.can_apply = data['can_apply']
+            model.save(force_update=True)
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
+
+###
+# Application APIs
+###
+@check_login
+@csrf_exempt
+def sendApplyInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']['scholarship_id'])
+            user = models.User.objects.get(username=data['username'])
+            models.ApplyInfo.objects.update_or_create(user_id=user, apply_info_id=model,
+                                                      defaults={'apply_date': datetime.datetime.utcnow().replace(tzinfo=utc),
+                                                                'score': 0,
+                                                                'user_id': user,
+                                                                'apply_info_id': model,
+                                                                'json': data['data']['form'],
+                                                                'is_score_updated': False,
+                                                                'is_user_confirm': data['data']['confirm']})
+            if(data['data']['confirm']):
+                scorer_executor.submit(scorerInBackGround, user=user.user_id, apply_info=model.apply_info_id)
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "申请时发生错误"
+        finally:
+            return JsonResponse(result)
+
+@check_login
+@csrf_exempt
+def obtainApplyInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']['scholarship_id'])
+            user = None
+            if('stu_num' in data['data'].keys()):
+                user = models.User.objects.get(student_id=data['data']['stu_num'])
+            else:
+                user = models.User.objects.get(username=data['username'])
+            try:
+                res = models.ApplyInfo.objects.get(user_id=user, apply_info_id=model)
+                result['data'] = { 'json': res.json, 'is_user_confirm': res.is_user_confirm, 'id': res.apply_id }
+            except models.ApplyInfo.DoesNotExist:
+                result['data'] = ""
+            finally:
+                result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
+        finally:
+            return JsonResponse(result)
+
+@check_login
+@csrf_exempt
+def withdrawApplyInfo(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            model = models.ApplyInfoSetting.objects.get(
+                apply_info_id=data['data']['scholarship_id'])
+            user = models.User.objects.get(username=data['username'])
+            models.ApplyInfo.objects.filter(user_id=user, apply_info_id=model).delete()
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
+        finally:
+            return JsonResponse(result)
+
+###
+### Teacher Scoring
+###
+@check_teacher
+@csrf_exempt
+def setApplyInfoScore(req):
+    if(req.method == 'POST'):
+        result = {'status' : 1}
+        try:
+            data = json.loads(req.body)
+            apply = models.ApplyInfo.objects.get(apply_id=data['data']['apply_id'])
+            teacher = models.User.objects.get(username=data['username'])
+            models.TeacherScore.objects.update_or_create(apply_id=apply, teacher_id=teacher, defaults={
+                'teacher_id': teacher,
+                'apply_id': apply,
+                'score': data['data']['score']
+            })
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
+        finally:
+            return JsonResponse(result)
+
+@check_teacher
+@csrf_exempt
+def getApplyInfoScore(req):
+    if(req.method == 'POST'):
+        result = {'status' : 1}
+        try:
+            data = json.loads(req.body)
+            apply = models.ApplyInfo.objects.get(apply_id=data['data']['apply_id'])
+            teacher = models.User.objects.get(username=data['username'])
+            try:
+                res = models.TeacherScore.objects.get(apply_id=apply, teacher_id=teacher)
+                result['data'] = res.score
+            except models.TeacherScore.DoesNotExist:
+                result['data'] = 0.0
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = "服务器内部错误"
+        finally:
+            return JsonResponse(result)

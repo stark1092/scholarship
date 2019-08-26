@@ -1,5 +1,11 @@
 from functools import wraps
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
+from django.core import serializers
+from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
+from django.db import connections
+from django.core.paginator import Paginator
 from dbapp import models
 import requests
 import urllib
@@ -7,15 +13,10 @@ from django.utils.timezone import utc
 import urllib.parse
 import json
 from config import *
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
-from django.core import serializers
-from django.forms.models import model_to_dict
 import uuid
 import sys
 import datetime
 import mammoth
-from django.db import connections
 from dbapp import scorer
 import time
 sys.path.append('../')
@@ -41,7 +42,7 @@ def scorerInBackGround(*arg, **kwargs):
         entry.score = score_res[0]
         entry.academic_score = score_res[1]
         entry.work_score = score_res[2]
-        entry.extra_info = score_res[3]
+        entry.extra_info = json.dumps(score_res[3])
         entry.wrong_time = score_res[4]
         entry.is_score_updated = True
         entry.save()
@@ -431,44 +432,83 @@ def sendNotifyUpload(req):
 @csrf_exempt
 def filterAndSort(req):
     if(req.method == 'POST'):
-        result = {'status': 1, 'message': 'Not implemented'}
-        # TODO - edit this
-        return JsonResponse(result)
+        result = { 'status' : 1 }
         try:
             data = json.loads(req.body)
-            filters = {}
-            print(data)
-            for key in data['data']:
-                if key != '' and key != 'scholarship_name' and key != 'ordering':
-                    filters[key] = data['data'][key]
-            if not filters:
-                students = models.User.objects.all()
+            data = data['data']
+            ordering = None
+            if(data['ordering'] == 'tot_score'):
+                ordering = "-score"
+            elif(data['ordering'] == 'academic_score'):
+                ordering = "-academic_score"
+            elif(data['ordering'] == 'work_score'):
+                ordering = "-work_score"
+            filter = {}
+            filter['apply_info_id'] = data['scholarship_name']
+            if(data['department'] != ''):
+                filter['user_id__department'] = data['department']
+            if(data['student_type'] == 'master'):
+                filter['user_id__student_type'] = 'master'
             else:
-                students = models.User.objects.filter(**filters)
-            if data['data']['scholarship_name'] == '':
-                applicants = models.ApplyInfo.objects.filter(
-                    user_id__in=students)
-            else:
-                names = models.ApplyInfoSetting.objects.filter(
-                    scholarship_name=data['data']['scholarship_name'])
-                applicants = models.ApplyInfo.objects.filter(
-                    apply_info_id__in=names, user_id__in=students)
-            cnt = 0
-            upload_info = []
-            for applicant in applicants:
-                upload_info.append(json.loads(applicant.json))
-            if data['data']['ordering'] != '':
-                upload_info = sorted(
-                    upload_info, key=lambda score: score[data['data']['ordering']], reverse=True)
-            for seq in range(len(upload_info)):
-                upload_info[seq]['seq'] = str(seq)
-            result['applicant'] = upload_info
+                filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False)
+            for entry in queries.iterator():
+                try:
+                    print("Found entries not evaluated, start evaluating...")
+                    scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
+                    if(scorer_id not in scorer_map):
+                        scorer_map[scorer_id] = scorer.ScoreCalculator(json.loads(entry.apply_info_id.apply_score_rule_id.json))
+                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json))
+                    entry.score = score_res[0]
+                    entry.academic_score = score_res[1]
+                    entry.work_score = score_res[2]
+                    entry.extra_info = json.dumps(score_res[3])
+                    entry.wrong_time = score_res[4]
+                    entry.is_score_updated = True
+                    entry.save()
+                    print(score_res)
+                except Exception as e:
+                    print(e)
+            ## return results
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering)
+            pages = Paginator(queries, 15)
+            page = pages.page(data['page'])
+            result['data'] = { 'page_cnt': pages.num_pages, 'count': pages.count, 'curr_entries': [] }
+            seq = (data['page'] - 1) * 15
+            for item in page.object_list:
+                entry = {'seq': seq, 'student_num': item.user_id.student_id, 'name': item.user_id.name, 
+                'academic_score': item.academic_score, 'work_score': item.work_score, 'tot_score': item.score,
+                'num_report': item.report_num }
+                seq += 1
+                ## merge A,B,C,O and patent nums
+                if(item.extra_info != ""):
+                    try:
+                        extras = json.loads(item.extra_info)
+                        if('academic' in extras.keys()):
+                            extras = extras['academic']
+                            patent_cnt = 0
+                            paper_cnt = {'A-1': 0, 'B-1': 0, 'C-1': 0, 'O-1': 0}
+                            if('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
+                                for k in extras['conf_paper'].keys():
+                                    paper_cnt[k] += extras['conf_paper'][k]
+                            if('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
+                                for k in extras['journal_paper'].keys():
+                                    paper_cnt[k] += extras['journal_paper'][k]
+                            if('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
+                                patent_cnt += extras['patent']
+                        entry['patent'] = patent_cnt
+                        entry['a_paper'] = paper_cnt['A-1']
+                        entry['b_paper'] = paper_cnt['B-1']
+                        entry['c_paper'] = paper_cnt['C-1']
+                        entry['o_paper'] = paper_cnt['O-1']
+                    except Exception as e:
+                        print(e)
+                result['data']['curr_entries'].append(entry)
             result['status'] = 0
-            print(result)
-            return JsonResponse(result)
         except Exception as e:
             print(e)
             result['message'] = '服务器内部错误'
+        finally:
             return JsonResponse(result)
 
 
@@ -745,6 +785,21 @@ def getAvailableScholarshipList(req):
         finally:
             return JsonResponse(result)
 
+@check_login
+@csrf_exempt
+def getAllScholarshipList(req):
+    if(req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            result['data'] = serializers.serialize('json', models.ApplyInfoSetting.objects.all().order_by(
+                "-set_time"), fields=('scholarship_name', 'apply_info_id', 'set_time', 'apply_score_rule_id', 'can_apply'))
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '操作失败'
+        finally:
+            return JsonResponse(result)
 
 @check_login
 @csrf_exempt

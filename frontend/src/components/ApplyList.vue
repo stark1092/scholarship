@@ -15,11 +15,15 @@
           ></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item :rules="[{ required: true, message: '字段不能为空', trigger: ['change','blur'] }]" prop="student_type">
+      <el-form-item
+        :rules="[{ required: true, message: '字段不能为空', trigger: ['change','blur'] }]"
+        prop="student_type"
+      >
         <el-select
           v-model="filter.conditions.student_type"
           placeholder
-          style="width: 5vw; min-width: 80px;">
+          style="width: 5vw; min-width: 80px;"
+        >
           <el-option
             v-for="item in filter.student_types"
             :key="item.value"
@@ -63,7 +67,7 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submitFilter">确定</el-button>
+        <el-button type="primary" @click="submitFilter(1)">确定</el-button>
       </el-form-item>
       <el-form-item>
         <el-button type="success" @click="exportList" v-if="isAdmin">导出为EXCEL</el-button>
@@ -98,10 +102,12 @@ import {
 
 const numElemPerPage = 15;
 
+var main_ptr = null;
+
 export default {
   data() {
     return {
-      isAdmin: window.sessionStorage.user_type === '2',
+      isAdmin: window.sessionStorage.user_type === "2",
       numPages: 0,
       model: {
         tableColumn: [
@@ -181,11 +187,10 @@ export default {
         ],
         tableData: []
       },
-      buffer: [],
       linkCb: function(link) {
         let route = this.$router.resolve({
           path: "/home/view_apply",
-          query: { stu_num: link }
+          query: { stu_num: link, scholarship: main_ptr.filter.conditions.scholarship_name }
         });
         window.open(route.href, "_blank");
       },
@@ -196,16 +201,7 @@ export default {
           department: "",
           ordering: ""
         },
-        scholarship_names: [
-          {
-            value: "s1",
-            label: "Scholarship 1"
-          },
-          {
-            value: "s2",
-            label: "Scholarship 2"
-          }
-        ],
+        scholarship_names: [],
         student_types: getRoughStudentTypeList(),
         departments: getDepartmentList(),
         ordering_list: [
@@ -227,36 +223,49 @@ export default {
   },
   components: { List },
   created() {
-    /*
-    this.$http.post('getAllApplicants', {'token': window.sessionStorage.token, 'username': window.sessionStorage.username})
-    .then(response => {
-      let json = JSON.parse(response.bodyText);
-      if(json.status == 0) {
-        this.buffer = json.applicant;
-        this.numPages = Math.ceil(this.buffer.length / numElemPerPage);
-        this.handlePageChange(1);
-      }
-    }).catch(function(response){
-      console.log('Error')
-    })
-    */
+    main_ptr = this;
+    this.loadScholarshipList();
   },
   methods: {
-    handlePageChange(val) {
-      this.model.tableData = this.buffer.slice(
-        (val - 1) * numElemPerPage,
-        val * numElemPerPage
-      );
+    loadScholarshipList(cb = null) {
+      let that = this;
+      this.$http
+        .post("getAllScholarshipList", {
+          username: window.sessionStorage.username,
+          token: window.sessionStorage.token
+        })
+        .then(response => {
+          let res = JSON.parse(response.bodyText);
+          if (res.status === 0) {
+            let data = JSON.parse(res.data);
+            data.forEach(e => {
+              that.filter.scholarship_names.push({
+                label: e.fields.scholarship_name,
+                value: e.pk
+              });
+            });
+            if (cb) cb();
+          } else {
+            swal({
+              title: "出错了",
+              text: res.message,
+              icon: "error",
+              button: "确定"
+            }).then(val => {
+              if (res.status === -1) {
+                that.$router.push("/");
+              }
+            });
+          }
+        })
+        .catch(err => console.log(err));
     },
-    fakeAddData() {
-      for (let i = 0; i < 33; ++i) {
-        this.fakeAddDataHelper();
-      }
+    handlePageChange(val) {
+      this.submitFilter(val)
     },
     fakeAddDataHelper() {
-      let idx = this.buffer.length;
-      this.buffer.push({
-        seq: idx,
+      let template = {
+        seq: 0,
         student_num: "2017011555",
         name: "王小明",
         a_paper: "1",
@@ -273,32 +282,53 @@ export default {
           link: "2017011555",
           label: "点击查看"
         }
-      });
+      }
     },
-    submitFilter() {
+    submitFilter(page=1) {
+      let that = this;
       this.$refs["filter_form"].validate(valid => {
-        console.log(valid)
         if (valid) {
+          let data = {};
+          Object.assign(data, this.filter.conditions);
+          data.page = page;
           this.$http
             .post("filterAndSort", {
               token: window.sessionStorage.token,
               username: window.sessionStorage.username,
-              data: this.filter.conditions
+              data: data
             })
             .then(response => {
-              let json = JSON.parse(response.bodyText);
-              console.log(json);
-              if (json.status == 0) {
-                this.buffer = json.applicant;
-                this.numPages = Math.ceil(this.buffer.length / numElemPerPage);
-                this.handlePageChange(1);
+              let res = JSON.parse(response.bodyText);
+              if (res.status === 0) {
+                 that.numPages = res.data.page_cnt;
+                 console.log(res.data)
+                 that.model.tableData = res.data.curr_entries
+                 that.model.tableData.forEach(e => {
+                   e.link = { link: e.student_num, label: "点击查看" }
+                 })
+              } else {
+                swal({
+                  title: "出错了",
+                  text: res.message,
+                  icon: "error",
+                  button: "确定"
+                }).then(val => {
+                  if (res.status === -1) {
+                    that.$router.push("/");
+                  }
+                });
               }
             })
             .catch(function(response) {
               console.log(response);
             });
         } else {
-          swal({title: "错误", text: "请选择完整筛选条件", icon: "error", button: "确定"});
+          swal({
+            title: "错误",
+            text: "请选择完整筛选条件",
+            icon: "error",
+            button: "确定"
+          });
         }
       });
     },

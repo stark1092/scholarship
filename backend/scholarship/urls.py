@@ -45,6 +45,7 @@ urlpatterns = [
     ### scholarshipInfo APIs
     path('addScholarshipInfo', views.addScholarshipInfo),
     path('getAvailableScholarshipList', views.getAvailableScholarshipList),
+    path('getAllScholarshipList', views.getAllScholarshipList),
     path('getScholarshipMaterial', views.getScholarshipMaterial),
     path('getScholarshipInfoList', views.getScholarshipInfoList),
     path('delScholarshipInfo', views.delScholarshipInfo),

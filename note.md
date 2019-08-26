@@ -45,7 +45,7 @@ Always use **POST** request, and the post data is as follows. Note here I didn't
 
   If router param is empty, it means the student just wanna check his/her own record.
 
-- [ ] Obtain ordered application list (send filter data to server, i.e. scholarship_name, doctor/bachelor, department, ordering criteria, and get the corresponding response. **Remember to handle pagination**, which means you have to POST some page number)
+- [x] Obtain ordered application list (send filter data to server, i.e. scholarship_name, doctor/bachelor, department, ordering criteria, and get the corresponding response. **Remember to handle pagination**, which means you have to POST some page number)
 
 ### Teacher Side
 

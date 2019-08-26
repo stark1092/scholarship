@@ -1,6 +1,5 @@
 from functools import wraps
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.http import JsonResponse
 from django.core import serializers
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
@@ -53,53 +52,55 @@ def scorerInBackGround(*arg, **kwargs):
         connections.close_all()
 
 # utils start
-sessionUser = {}  # token - username
-userSession = {}  # username - token
+
+def createToken(user):
+    # update token if already exists
+    token = str(uuid.uuid4())
+    models.SessionToken.objects.update_or_create(user=user, 
+        defaults={'user': user, 'token': token, 'set_time': datetime.datetime.utcnow().replace(tzinfo=utc)})
+    return token
 
 
-def createToken(username):
-    # remove token if already exists
-    if(username in userSession.keys()):
-        token = userSession[username]
-        if(token is not None):
-            sessionUser.pop(token, None)
-    uid = uuid.uuid4()
-    sessionUser[str(uid)] = {'username': username,
-                             'create_time': datetime.datetime.now()}
-    userSession[username] = str(uid)
-    return uid
+def updateToken(user):
+    try:
+        obj = models.SessionToken.objects.get(user=user)
+        obj.set_time = datetime.datetime.utcnow().replace(tzinfo=utc)
+        obj.save(force_update=True)
+    except Exception as e:
+        print(e)
 
-
-def updateToken(uid):
-    if(uid in sessionUser.keys()):
-        sessionUser[uid]['create_time'] = datetime.datetime.now()
-
-
-def validateToken(uid, expire_time):
-    # user does not have token
-    if(uid not in sessionUser.keys()):
-        return None
-    # token expired, delete it
-    elif((datetime.datetime.now() - sessionUser[uid]['create_time']) >= datetime.timedelta(seconds=expire_time)):
-        userSession.pop(sessionUser[uid]['username'], None)
-        sessionUser.pop(uid, None)
-        return None
-    else:
-        return sessionUser[uid]['username']
-
+def getToken(user, expire_time):
+    try:
+        obj = models.SessionToken.objects.get(user=user)
+        if(datetime.datetime.utcnow().replace(tzinfo=utc) - obj.set_time >= datetime.timedelta(seconds=expire_time)):
+            return ''
+        else:
+            return obj.token
+    except Exception as e:
+        print(e)
+        return ''
 
 def check_login(f):
     @wraps(f)
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
-        if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-            updateToken(data['token'])
-            return f(req, *arg, **kwargs)
-        else:
-            return JsonResponse({'status': -1, 'message': '用户未登录'})
+        try:
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token']):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
+            else:
+                return JsonResponse({'status': -1, 'message': '用户未登录'})
+        except:
+            return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
 
@@ -108,20 +109,21 @@ def check_teacher(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
         try:
-            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-                user = models.User.objects.get(username=data['username'])
-                if(user.user_type == 1):
-                    updateToken(data['token'])
-                    return f(req, *arg, **kwargs)
-                else:
-                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token'] and user.user_type == 1):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
-        except Exception as e:
-            print(e)
+        except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
@@ -131,20 +133,21 @@ def check_admin(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
         try:
-            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-                user = models.User.objects.get(username=data['username'])
-                if(user.user_type == 2):
-                    updateToken(data['token'])
-                    return f(req, *arg, **kwargs)
-                else:
-                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token'] and user.user_type == 2):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
-        except Exception as e:
-            print(e)
+        except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
@@ -154,20 +157,21 @@ def check_admin_teacher(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
         try:
-            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-                user = models.User.objects.get(username=data['username'])
-                if(user.user_type == 1 or user.user_type == 2):
-                    updateToken(data['token'])
-                    return f(req, *arg, **kwargs)
-                else:
-                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token'] and (user.user_type == 1 or user.user_type == 2)):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
-        except Exception as e:
-            print(e)
+        except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
@@ -250,7 +254,7 @@ def userlogin_stucs_cb(req):
                 user, created = models.User.objects.get_or_create(
                     student_id=stu['student_id'], defaults=stu_info)
                 models.LogAction('login', user, getIpAddr(req))
-                result['token'] = createToken(user.username)
+                result['token'] = createToken(user)
                 result['user_type'] = user.user_type
                 result['status'] = 0
                 result['name'] = user.name
@@ -283,7 +287,7 @@ def userlogin(req):
                 return JsonResponse(result)
             else:
                 models.LogAction('login', user, getIpAddr(req))
-                result['token'] = createToken(user.username)
+                result['token'] = createToken(user)
                 result['user_type'] = user.user_type
                 result['status'] = 0
                 result['name'] = user.name
@@ -405,10 +409,10 @@ def sendNotifyUpload(req):
             token = req.POST.get('token')
             f = req.FILES.get('file')
             title = req.POST.get('title')
-            if(validateToken(token, token_exp_time) == username):
+            if(token == getToken(user)):
                 user = models.User.objects.get(username=username)
                 if(user.user_type == 2):
-                    updateToken(token)
+                    updateToken(user)
                     # do real work here
                     f.seek(0)
                     converted = mammoth.convert_to_html(f)

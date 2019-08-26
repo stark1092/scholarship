@@ -14,6 +14,7 @@ import 'element-ui/lib/theme-chalk/index.css'
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
+import API_URL from './config'
 
 Vue.use(ElementUI)
 Vue.use(VueResource)
@@ -21,7 +22,7 @@ Vue.use(VueQuillEditor)
 Vue.use(VueObserveVisibility)
 Vue.use(Router)
 Vue.config.productionTip = false
-Vue.http.options.root = 'http://127.0.0.1:8000/'
+Vue.http.options.root = API_URL
 
 /* eslint-disable no-new */
 new Vue({

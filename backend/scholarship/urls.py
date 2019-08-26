@@ -18,7 +18,6 @@ from django.urls import path
 from dbapp import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('userlogin_stucs', views.userlogin_stucs),
     path('userlogin_stucs_cb', views.userlogin_stucs_cb),
     path('userlogin', views.userlogin),

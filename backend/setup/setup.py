@@ -56,7 +56,7 @@ def main():
             print("Material/ScoreRule table is not empty, please truncate them before you do the initial import")
             exit(0)
         print("Import default settings")
-        with open("default_template.json") as f:
+        with open("default_template.json", encoding='utf-8') as f:
             res = json.load(f)
             mSetting = ApplyMaterialSetting(alias=res['material_settings']['alias'], json=res['material_settings']['json'])
             mSetting.save()

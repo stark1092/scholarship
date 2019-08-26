@@ -334,6 +334,42 @@ export default {
     },
     exportList() {
       // submit filter to backend, and request generating excel file
+      let that = this;
+      this.$refs["filter_form"].validate(valid => {
+        if (valid) {
+          let data = {};
+          Object.assign(data, this.filter.conditions);
+          this.$http
+            .post("exportExcel", {
+              token: window.sessionStorage.token,
+              username: window.sessionStorage.username,
+              data: data
+            }, {responseType: 'blob'})
+            .then(response => {
+              // let res = JSON.parse(response.bodyText);
+              console.log(response);
+
+              const link = document.createElement('a')
+              let blob = new Blob([response.data],{type: 'application/vnd.ms-excel'});
+              link.style.display = 'none'
+              link.href = URL.createObjectURL(blob);
+              link.setAttribute('download', '申请列表.xls')
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+            })
+            .catch(function(response) {
+              console.log(response);
+            });
+        } else {
+          swal({
+            title: "错误",
+            text: "请选择完整筛选条件",
+            icon: "error",
+            button: "确定"
+          });
+        }
+      });
     }
   }
 };

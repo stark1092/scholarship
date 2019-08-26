@@ -3,3 +3,17 @@ stucs_client_secret = 'stucs_secret'
 hostname = 'http://127.0.0.1:8080'
 token_exp_time = 900 # in seconds
 scorer_workers = 6
+
+django_settings = {
+    'secret_key': 'your_secret_key',
+    'debug': True,  ## DO NOT ENABLE THIS IN PRODUCTION
+    'allowed_hosts': ['*']
+}
+
+database_settings = {
+    'db_name': 'scholarship',
+    'user': 'root',
+    'password': 'root',
+    'host': 'localhost',
+    'port': '3306'
+}

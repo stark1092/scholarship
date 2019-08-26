@@ -1,6 +1,5 @@
 from functools import wraps
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.http import JsonResponse
 from django.core import serializers
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
@@ -19,6 +18,8 @@ import datetime
 import mammoth
 from dbapp import scorer
 import time
+import xlwt
+from io import BytesIO
 sys.path.append('../')
 
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
@@ -53,53 +54,55 @@ def scorerInBackGround(*arg, **kwargs):
         connections.close_all()
 
 # utils start
-sessionUser = {}  # token - username
-userSession = {}  # username - token
+
+def createToken(user):
+    # update token if already exists
+    token = str(uuid.uuid4())
+    models.SessionToken.objects.update_or_create(user=user, 
+        defaults={'user': user, 'token': token, 'set_time': datetime.datetime.utcnow().replace(tzinfo=utc)})
+    return token
 
 
-def createToken(username):
-    # remove token if already exists
-    if(username in userSession.keys()):
-        token = userSession[username]
-        if(token is not None):
-            sessionUser.pop(token, None)
-    uid = uuid.uuid4()
-    sessionUser[str(uid)] = {'username': username,
-                             'create_time': datetime.datetime.now()}
-    userSession[username] = str(uid)
-    return uid
+def updateToken(user):
+    try:
+        obj = models.SessionToken.objects.get(user=user)
+        obj.set_time = datetime.datetime.utcnow().replace(tzinfo=utc)
+        obj.save(force_update=True)
+    except Exception as e:
+        print(e)
 
-
-def updateToken(uid):
-    if(uid in sessionUser.keys()):
-        sessionUser[uid]['create_time'] = datetime.datetime.now()
-
-
-def validateToken(uid, expire_time):
-    # user does not have token
-    if(uid not in sessionUser.keys()):
-        return None
-    # token expired, delete it
-    elif((datetime.datetime.now() - sessionUser[uid]['create_time']) >= datetime.timedelta(seconds=expire_time)):
-        userSession.pop(sessionUser[uid]['username'], None)
-        sessionUser.pop(uid, None)
-        return None
-    else:
-        return sessionUser[uid]['username']
-
+def getToken(user, expire_time):
+    try:
+        obj = models.SessionToken.objects.get(user=user)
+        if(datetime.datetime.utcnow().replace(tzinfo=utc) - obj.set_time >= datetime.timedelta(seconds=expire_time)):
+            return ''
+        else:
+            return obj.token
+    except Exception as e:
+        print(e)
+        return ''
 
 def check_login(f):
     @wraps(f)
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
-        if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-            updateToken(data['token'])
-            return f(req, *arg, **kwargs)
-        else:
-            return JsonResponse({'status': -1, 'message': '用户未登录'})
+        try:
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token']):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
+            else:
+                return JsonResponse({'status': -1, 'message': '用户未登录'})
+        except:
+            return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
 
@@ -108,20 +111,21 @@ def check_teacher(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
         try:
-            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-                user = models.User.objects.get(username=data['username'])
-                if(user.user_type == 1):
-                    updateToken(data['token'])
-                    return f(req, *arg, **kwargs)
-                else:
-                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token'] and user.user_type == 1):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
-        except Exception as e:
-            print(e)
+        except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
@@ -131,20 +135,21 @@ def check_admin(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
         try:
-            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-                user = models.User.objects.get(username=data['username'])
-                if(user.user_type == 2):
-                    updateToken(data['token'])
-                    return f(req, *arg, **kwargs)
-                else:
-                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token'] and user.user_type == 2):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
-        except Exception as e:
-            print(e)
+        except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
@@ -154,20 +159,21 @@ def check_admin_teacher(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
+            if('username' in data.keys() and 'token' in data.keys()):
+                pass
+            else:
+                raise Exception()
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
         try:
-            if('username' in data.keys() and validateToken(data['token'], token_exp_time) == data['username']):
-                user = models.User.objects.get(username=data['username'])
-                if(user.user_type == 1 or user.user_type == 2):
-                    updateToken(data['token'])
-                    return f(req, *arg, **kwargs)
-                else:
-                    return JsonResponse({'status': 1, 'message': '无操作权限'})
+            user = models.User.objects.get(username=data['username'])
+            token = getToken(user, token_exp_time)
+            if(token == data['token'] and (user.user_type == 1 or user.user_type == 2)):
+                updateToken(user)
+                return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
-        except Exception as e:
-            print(e)
+        except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
     return inner
 
@@ -250,7 +256,7 @@ def userlogin_stucs_cb(req):
                 user, created = models.User.objects.get_or_create(
                     student_id=stu['student_id'], defaults=stu_info)
                 models.LogAction('login', user, getIpAddr(req))
-                result['token'] = createToken(user.username)
+                result['token'] = createToken(user)
                 result['user_type'] = user.user_type
                 result['status'] = 0
                 result['name'] = user.name
@@ -283,7 +289,7 @@ def userlogin(req):
                 return JsonResponse(result)
             else:
                 models.LogAction('login', user, getIpAddr(req))
-                result['token'] = createToken(user.username)
+                result['token'] = createToken(user)
                 result['user_type'] = user.user_type
                 result['status'] = 0
                 result['name'] = user.name
@@ -405,10 +411,10 @@ def sendNotifyUpload(req):
             token = req.POST.get('token')
             f = req.FILES.get('file')
             title = req.POST.get('title')
-            if(validateToken(token, token_exp_time) == username):
+            if(token == getToken(user)):
                 user = models.User.objects.get(username=username)
                 if(user.user_type == 2):
-                    updateToken(token)
+                    updateToken(user)
                     # do real work here
                     f.seek(0)
                     converted = mammoth.convert_to_html(f)
@@ -509,6 +515,106 @@ def filterAndSort(req):
             print(e)
             result['message'] = '服务器内部错误'
         finally:
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def exportExcel(req):
+    if(req.method == 'POST'):
+        result = { 'status' : 1 }
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ordering = None
+            if(data['ordering'] == 'tot_score'):
+                ordering = "-score"
+            elif(data['ordering'] == 'academic_score'):
+                ordering = "-academic_score"
+            elif(data['ordering'] == 'work_score'):
+                ordering = "-work_score"
+            filter = {}
+            filter['apply_info_id'] = data['scholarship_name']
+            if(data['department'] != ''):
+                filter['user_id__department'] = data['department']
+            if(data['student_type'] == 'master'):
+                filter['user_id__student_type'] = 'master'
+            else:
+                filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
+            ## return results
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering)
+            
+            response = HttpResponse(content_type='application/vnd.ms-excel')
+            response['Content-Disposition'] = 'attachment;filename=order.xls'
+            wb = xlwt.Workbook(encoding='utf8')
+            sheet = wb.add_sheet('order-sheet')
+
+            sheet.write(0,0,'编号')
+            sheet.write(0,1,'学号')
+            sheet.write(0,2,'姓名')
+            sheet.write(0,3,'A类论文')
+            sheet.write(0,4,'B类论文')
+            sheet.write(0,5,'C类论文')
+            sheet.write(0,6,'O类论文')
+            sheet.write(0,7,'专利')
+            sheet.write(0,8,'学术得分')
+            sheet.write(0,9,'社工得分')
+            sheet.write(0,10,'教师评分')
+            sheet.write(0,11,'总分')
+            sheet.write(0,12,'被举报数')
+
+            seq = 0
+            for item in queries:
+                seq += 1
+                sheet.write(seq, 0, seq)
+                sheet.write(seq, 1, item.user_id.student_id)
+                sheet.write(seq, 2, item.user_id.name)
+                
+                sheet.write(seq, 8, item.academic_score)
+                sheet.write(seq, 9, item.work_score)
+                sheet.write(seq, 10, 0)
+                sheet.write(seq, 11, item.score)
+                sheet.write(seq, 12, item.report_num)
+
+                entry = {'patent': 0, 'a_paper': 0, 'b_paper': 0, 'c_paper': 0, 'o_paper': 0}
+                if(item.extra_info != ""):
+                    try:
+                        extras = json.loads(item.extra_info)
+                        if('academic' in extras.keys()):
+                            extras = extras['academic']
+                            patent_cnt = 0
+                            paper_cnt = {'A-1': 0, 'B-1': 0, 'C-1': 0, 'O-1': 0}
+                            if('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
+                                for k in extras['conf_paper'].keys():
+                                    paper_cnt[k] += extras['conf_paper'][k]
+                            if('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
+                                for k in extras['journal_paper'].keys():
+                                    paper_cnt[k] += extras['journal_paper'][k]
+                            if('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
+                                patent_cnt += extras['patent']
+                        entry['patent'] = patent_cnt
+                        entry['a_paper'] = paper_cnt['A-1']
+                        entry['b_paper'] = paper_cnt['B-1']
+                        entry['c_paper'] = paper_cnt['C-1']
+                        entry['o_paper'] = paper_cnt['O-1']
+                        
+                    except Exception as e:
+                        print(e)
+
+                sheet.write(seq, 3, entry['a_paper'])
+                sheet.write(seq, 4, entry['b_paper'])
+                sheet.write(seq, 5, entry['c_paper'])
+                sheet.write(seq, 6, entry['o_paper'])
+                sheet.write(seq, 7, entry['patent'])
+
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            response.write(output.getvalue())
+            # response['status'] = 0
+            return response
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
 

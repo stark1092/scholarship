@@ -149,5 +149,10 @@ class TeacherScore(models.Model):
     teacher_id = models.ForeignKey(User, on_delete=models.CASCADE)
     score = models.IntegerField(null=False, default=0)
 
+class SessionToken(models.Model):
+    user = models.OneToOneField(User, models.CASCADE)
+    token = models.CharField(max_length=64, db_index=True)
+    set_time = models.DateTimeField(auto_now_add=True)
+
 def LogAction(action, username, ip, details=''):
     Log.objects.create(action=action,username=username, details=details,ip=ip)

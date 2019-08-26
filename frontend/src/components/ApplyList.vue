@@ -190,7 +190,10 @@ export default {
       linkCb: function(link) {
         let route = this.$router.resolve({
           path: "/home/view_apply",
-          query: { stu_num: link, scholarship: main_ptr.filter.conditions.scholarship_name }
+          query: {
+            stu_num: link,
+            scholarship: main_ptr.filter.conditions.scholarship_name
+          }
         });
         window.open(route.href, "_blank");
       },
@@ -261,7 +264,7 @@ export default {
         .catch(err => console.log(err));
     },
     handlePageChange(val) {
-      this.submitFilter(val)
+      this.submitFilter(val);
     },
     fakeAddDataHelper() {
       let template = {
@@ -282,9 +285,9 @@ export default {
           link: "2017011555",
           label: "点击查看"
         }
-      }
+      };
     },
-    submitFilter(page=1) {
+    submitFilter(page = 1) {
       let that = this;
       this.$refs["filter_form"].validate(valid => {
         if (valid) {
@@ -300,12 +303,12 @@ export default {
             .then(response => {
               let res = JSON.parse(response.bodyText);
               if (res.status === 0) {
-                 that.numPages = res.data.page_cnt;
-                 console.log(res.data)
-                 that.model.tableData = res.data.curr_entries
-                 that.model.tableData.forEach(e => {
-                   e.link = { link: e.student_num, label: "点击查看" }
-                 })
+                that.numPages = res.data.page_cnt;
+                console.log(res.data);
+                that.model.tableData = res.data.curr_entries;
+                that.model.tableData.forEach(e => {
+                  e.link = { link: e.student_num, label: "点击查看" };
+                });
               } else {
                 swal({
                   title: "出错了",
@@ -340,23 +343,41 @@ export default {
           let data = {};
           Object.assign(data, this.filter.conditions);
           this.$http
-            .post("exportExcel", {
-              token: window.sessionStorage.token,
-              username: window.sessionStorage.username,
-              data: data
-            }, {responseType: 'blob'})
+            .post(
+              "exportExcel",
+              {
+                token: window.sessionStorage.token,
+                username: window.sessionStorage.username,
+                data: data
+              },
+              { responseType: "blob" }
+            )
             .then(response => {
-              // let res = JSON.parse(response.bodyText);
-              console.log(response);
-
-              const link = document.createElement('a')
-              let blob = new Blob([response.data],{type: 'application/vnd.ms-excel'});
-              link.style.display = 'none'
+              if (response.body.status !== undefined) {
+                if (response.body.status !== 0) {
+                  swal({
+                    title: "出错了",
+                    text: response.body.message,
+                    icon: "error",
+                    button: "确定"
+                  }).then(val => {
+                    if (response.body.status === -1) {
+                      that.$router.push("/");
+                    }
+                  });
+                  return;
+                }
+              }
+              const link = document.createElement("a");
+              let blob = new Blob([response.data], {
+                type: "application/vnd.ms-excel"
+              });
+              link.style.display = "none";
               link.href = URL.createObjectURL(blob);
-              link.setAttribute('download', '申请列表.xls')
-              document.body.appendChild(link)
-              link.click()
-              document.body.removeChild(link)
+              link.setAttribute("download", "申请列表.xls");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
             })
             .catch(function(response) {
               console.log(response);

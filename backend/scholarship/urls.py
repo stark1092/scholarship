@@ -29,6 +29,7 @@ urlpatterns = [
     path('sendNotifyUpload', views.sendNotifyUpload),
     path('delNotify', views.delNotify),
     path('filterAndSort', views.filterAndSort),
+    path('exportExcel', views.exportExcel),
     path('changePassword', views.changePassword),
     ### material APIs
     path('addMaterial', views.addMaterial),

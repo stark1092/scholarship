@@ -19,6 +19,8 @@ import datetime
 import mammoth
 from dbapp import scorer
 import time
+import xlwt
+from io import BytesIO
 sys.path.append('../')
 
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
@@ -509,6 +511,106 @@ def filterAndSort(req):
             print(e)
             result['message'] = '服务器内部错误'
         finally:
+            return JsonResponse(result)
+
+@check_admin
+@csrf_exempt
+def exportExcel(req):
+    if(req.method == 'POST'):
+        result = { 'status' : 1 }
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ordering = None
+            if(data['ordering'] == 'tot_score'):
+                ordering = "-score"
+            elif(data['ordering'] == 'academic_score'):
+                ordering = "-academic_score"
+            elif(data['ordering'] == 'work_score'):
+                ordering = "-work_score"
+            filter = {}
+            filter['apply_info_id'] = data['scholarship_name']
+            if(data['department'] != ''):
+                filter['user_id__department'] = data['department']
+            if(data['student_type'] == 'master'):
+                filter['user_id__student_type'] = 'master'
+            else:
+                filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
+            ## return results
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering)
+            
+            response = HttpResponse(content_type='application/vnd.ms-excel')
+            response['Content-Disposition'] = 'attachment;filename=order.xls'
+            wb = xlwt.Workbook(encoding='utf8')
+            sheet = wb.add_sheet('order-sheet')
+
+            sheet.write(0,0,'编号')
+            sheet.write(0,1,'学号')
+            sheet.write(0,2,'姓名')
+            sheet.write(0,3,'A类论文')
+            sheet.write(0,4,'B类论文')
+            sheet.write(0,5,'C类论文')
+            sheet.write(0,6,'O类论文')
+            sheet.write(0,7,'专利')
+            sheet.write(0,8,'学术得分')
+            sheet.write(0,9,'社工得分')
+            sheet.write(0,10,'教师评分')
+            sheet.write(0,11,'总分')
+            sheet.write(0,12,'被举报数')
+
+            seq = 0
+            for item in queries:
+                seq += 1
+                sheet.write(seq, 0, seq)
+                sheet.write(seq, 1, item.user_id.student_id)
+                sheet.write(seq, 2, item.user_id.name)
+                
+                sheet.write(seq, 8, item.academic_score)
+                sheet.write(seq, 9, item.work_score)
+                sheet.write(seq, 10, 0)
+                sheet.write(seq, 11, item.score)
+                sheet.write(seq, 12, item.report_num)
+
+                entry = {'patent': 0, 'a_paper': 0, 'b_paper': 0, 'c_paper': 0, 'o_paper': 0}
+                if(item.extra_info != ""):
+                    try:
+                        extras = json.loads(item.extra_info)
+                        if('academic' in extras.keys()):
+                            extras = extras['academic']
+                            patent_cnt = 0
+                            paper_cnt = {'A-1': 0, 'B-1': 0, 'C-1': 0, 'O-1': 0}
+                            if('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
+                                for k in extras['conf_paper'].keys():
+                                    paper_cnt[k] += extras['conf_paper'][k]
+                            if('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
+                                for k in extras['journal_paper'].keys():
+                                    paper_cnt[k] += extras['journal_paper'][k]
+                            if('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
+                                patent_cnt += extras['patent']
+                        entry['patent'] = patent_cnt
+                        entry['a_paper'] = paper_cnt['A-1']
+                        entry['b_paper'] = paper_cnt['B-1']
+                        entry['c_paper'] = paper_cnt['C-1']
+                        entry['o_paper'] = paper_cnt['O-1']
+                        
+                    except Exception as e:
+                        print(e)
+
+                sheet.write(seq, 3, entry['a_paper'])
+                sheet.write(seq, 4, entry['b_paper'])
+                sheet.write(seq, 5, entry['c_paper'])
+                sheet.write(seq, 6, entry['o_paper'])
+                sheet.write(seq, 7, entry['patent'])
+
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            response.write(output.getvalue())
+            # response['status'] = 0
+            return response
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
             return JsonResponse(result)
 
 

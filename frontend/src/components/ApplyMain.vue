@@ -12,6 +12,7 @@
           v-model="scholarship_id"
           placeholder="请选择奖学金"
           style="width: 30vw;"
+          :disabled="scholarship_id_preset != ''"
         >
           <el-option
             v-for="item in available_scholarships"
@@ -172,6 +173,7 @@ export default {
       scholarship_id: "",
       isApplied: false,
       stu_num: this.$route.query.stu_num,
+      scholarship_id_preset: "",
       available_scholarships: []
     };
   },
@@ -179,6 +181,11 @@ export default {
   created() {
     this.setReadOnly();
     let that = this;
+    if(this.$route.query.scholarship) {
+      this.scholarship_id_preset = parseInt(this.$route.query.scholarship);
+      this.onSelectScholarship(this.$route.query.scholarship);
+      this.scholarship_id = this.scholarship_id_preset;
+    }
     this.$http
       .post("getAvailableScholarshipList", {
         username: window.sessionStorage.username,

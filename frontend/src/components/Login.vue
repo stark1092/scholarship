@@ -1,11 +1,8 @@
 <template>
-  <div>
-    <el-row type="flex" justify="center" style="margin: 30px;">
-        <img src="../assets/logo.png" />
-    </el-row>
-    <el-row type="flex" justify="center">
+  <div class="container">
+    <el-row type="flex" justify="center" style="padding-top: 20vh;">
       <el-col :span="10">
-        <el-card class="box-card">
+        <el-card class="box-card card">
           <el-form :model="login" status-icon :rules="rule" ref="login">
             <el-form-item prop="username" label="用户名">
               <el-input prefix-icon="el-icon-user" v-model="login.username" auto-complete="off" />
@@ -30,6 +27,20 @@
     </el-row>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.container {
+  height: 100vh;
+  width: 100vw;
+  background: url('~@/assets/bg.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  .card {
+    background-color: rgba($color: #fff, $alpha: 0.5) !important;
+  }
+}
+</style>
 
 <script>
 /* eslint-disable */

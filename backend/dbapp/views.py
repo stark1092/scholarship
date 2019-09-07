@@ -606,6 +606,81 @@ def exportExcel(req):
                 sheet.write(seq, 6, entry['o_paper'])
                 sheet.write(seq, 7, entry['patent'])
 
+            
+            sheet2 = wb.add_sheet('detail-sheet')
+
+            sheet2.write(0,0,'编号')
+            sheet2.write(0,1,'学号')
+            sheet2.write(0,2,'姓名')
+            sheet2.write(0,3,'学术成果')
+            sheet2.write(0,4,'社会工作')
+            sheet2.write(0,5,'其它学术')
+
+            seq = 0
+            for item in queries:
+                seq += 1
+                sheet2.write(seq, 0, seq)
+                sheet2.write(seq, 1, item.user_id.student_id)
+                sheet2.write(seq, 2, item.user_id.name)
+                
+                if(item.json != ""):
+                    try:
+                        # print("Not Empty")
+                        academic_num = 0
+                        details = json.loads(item.json)
+                        if('academic' in details.keys()):
+                            # print("academic")
+                            adademics = details['academic']
+                            # print(extras)
+                            if('conf_paper' in adademics.keys()) :
+                                for paper in adademics['conf_paper']:
+                                    #print(paper)
+                                    sheet2.write(seq+academic_num,3,str(paper))
+                                    #print(paper)
+                                    academic_num += 1
+                            if('journal_paper' in adademics.keys()) :
+                                for paper in adademics['journal_paper']:
+                                    sheet2.write(seq+academic_num,3,str(paper))
+                                    academic_num += 1
+                            if('patent' in adademics.keys()) :
+                                for paper in adademics['patent']:
+                                    sheet2.write(seq+academic_num,3,str(paper))
+                                    academic_num += 1
+                            if('project' in adademics.keys()) :
+                                for project in adademics['project']:
+                                    sheet2.write(seq+academic_num,3,str(project))
+                                    academic_num += 1
+                            if('intl_standard' in adademics.keys()) :
+                                for standard in adademics['intl_standard']:
+                                    sheet2.write(seq+academic_num,3,str(standard))
+                                    academic_num += 1
+                            if('conf_award' in adademics.keys()) :
+                                for award in adademics['conf_award']:
+                                    sheet2.write(seq+academic_num,3,str(award))
+                                    academic_num += 1      
+
+                        work_num = 0
+                        if('work' in details.keys()):
+                            # print("academic")
+                            works = details['work']
+                            if('post' in works.keys()) :
+                                for work in works['post']:
+                                    sheet2.write(seq+work_num,4,str(work))
+                                    work_num += 1
+                            if('accu_pro' in works.keys()) :
+                                for work in works['accu_pro']:
+                                    sheet2.write(seq+work_num,4,str(work))
+                                    work_num += 1
+
+                        other_num = 0
+                        if('other_academic' in details.keys()):
+                            # print("academic")
+                            other_num += 1
+                            sheet2.write(seq,5,str(details['other_academic']))
+                        seq+=max(academic_num,work_num,other_num)
+                        
+                    except Exception as e:
+                        print(e)
             output = BytesIO()
             wb.save(output)
             output.seek(0)

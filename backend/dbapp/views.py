@@ -411,8 +411,8 @@ def sendNotifyUpload(req):
             token = req.POST.get('token')
             f = req.FILES.get('file')
             title = req.POST.get('title')
-            if(token == getToken(user)):
-                user = models.User.objects.get(username=username)
+            user = models.User.objects.get(username=username)
+            if(token == getToken(user, token_exp_time)):
                 if(user.user_type == 2):
                     updateToken(user)
                     # do real work here

@@ -219,7 +219,7 @@ class ScoreCalculator(object):
         print("Scorer initialization done...")
             
 
-    def getScore(self, item_dict):
+    def getScore(self, item_dict, extra_score=0):
         ## academic_score
         academic = 0.0
         counter_res = {'academic': {}, 'work': {}}
@@ -243,7 +243,7 @@ class ScoreCalculator(object):
                     wrong_time = True
             elif(_):
                 wrong_time = True
-        formula = self.__formulaReplacer(self.final_formula, academic=academic, work=work)
+        formula = self.__formulaReplacer(self.final_formula, academic=academic, work=work, extra=extra_score)
         try:
             return eval(formula), academic, work, counter_res, wrong_time
         except Exception as e:

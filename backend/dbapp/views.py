@@ -39,7 +39,7 @@ def scorerInBackGround(*arg, **kwargs):
         if(apply_info.apply_score_rule_id.apply_score_rule_id not in scorer_map):
             scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id] = scorer.ScoreCalculator(json.loads(apply_info.apply_score_rule_id.json))
         print("Get entry succesfully, evaluating...")
-        score_res = scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id].getScore(json.loads(entry.json))
+        score_res = scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id].getScore(json.loads(entry.json), entry.extra_score)
         entry.score = score_res[0]
         entry.academic_score = score_res[1]
         entry.work_score = score_res[2]
@@ -464,7 +464,7 @@ def filterAndSort(req):
                     scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
                     if(scorer_id not in scorer_map):
                         scorer_map[scorer_id] = scorer.ScoreCalculator(json.loads(entry.apply_info_id.apply_score_rule_id.json))
-                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json))
+                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
                     entry.score = score_res[0]
                     entry.academic_score = score_res[1]
                     entry.work_score = score_res[2]

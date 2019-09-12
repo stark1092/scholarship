@@ -49,6 +49,8 @@
                 v-if="col.type === 'date-picker'"
                 v-model="model.tableData[scope.$index][col.name]"
                 :disabled="isReadOnly"
+                format="yyyy 年 MM 月 dd 日"
+                value-format="yyyy-MM-dd"
               ></el-date-picker>
               <el-select
                 v-if="col.type === 'selection'"

@@ -457,7 +457,7 @@ def filterAndSort(req):
                 filter['user_id__student_type'] = 'master'
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False)
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
             for entry in queries.iterator():
                 try:
                     print("Found entries not evaluated, start evaluating...")
@@ -476,7 +476,7 @@ def filterAndSort(req):
                 except Exception as e:
                     print(e)
             ## return results
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering, "user_id_id")
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(ordering, "user_id_id")
             pages = Paginator(queries, 15)
             page = pages.page(data['page'])
             result['data'] = { 'page_cnt': pages.num_pages, 'count': pages.count, 'curr_entries': [] }
@@ -540,8 +540,26 @@ def exportExcel(req):
                 filter['user_id__student_type'] = 'master'
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
+            for entry in queries.iterator():
+                try:
+                    print("Found entries not evaluated, start evaluating...")
+                    scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
+                    if(scorer_id not in scorer_map):
+                        scorer_map[scorer_id] = scorer.ScoreCalculator(json.loads(entry.apply_info_id.apply_score_rule_id.json))
+                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
+                    entry.score = score_res[0]
+                    entry.academic_score = score_res[1]
+                    entry.work_score = score_res[2]
+                    entry.extra_info = json.dumps(score_res[3])
+                    entry.wrong_time = score_res[4]
+                    entry.is_score_updated = True
+                    entry.save()
+                    print(score_res)
+                except Exception as e:
+                    print(e)
             ## return results
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering, "user_id_id")
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(ordering, "user_id_id")
             
             response = HttpResponse(content_type='application/vnd.ms-excel')
             response['Content-Disposition'] = 'attachment;filename=order.xls'

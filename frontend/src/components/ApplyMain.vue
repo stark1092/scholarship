@@ -93,7 +93,7 @@
     <el-row type="flex" justify="start" style="margin-top: 30px">
       <el-col align="start">
         <h1>
-          其他加分项(如专项活动对应的Token)
+          其他加分项
           <el-tooltip
             class="item"
             effect="dark"
@@ -107,7 +107,7 @@
       </el-col>
     </el-row>
     <el-divider></el-divider>
-    <el-row type="flex" justify="start" style="margin-bottom: 30px;">
+    <el-row type="flex" justify="start" style="margin-bottom: 10px;">
       <el-col :span="18" align="start">
         <el-input
           type="textarea"
@@ -118,6 +118,15 @@
         ></el-input>
       </el-col>
     </el-row>
+    <!--Remove tag-->
+    <el-row type="flex" justify="start" v-if="!is_teacher && scholarship_id != ''" style="margin-bottom: 30px;">
+      <el-col :span="12" align="start">
+        <el-checkbox-group v-model="useSpecialAct" :disabled="readOnly || is_teacher">
+            <el-checkbox name="confirmed">使用专项活动加分</el-checkbox>
+        </el-checkbox-group>
+      </el-col>
+    </el-row>
+    <!--End remove tag-->
     <el-row type="flex" justify="center" v-if="!readOnly && !is_teacher && scholarship_id != ''">
       <el-col :span="3">
         <el-button type="success" @click="onSubmit">提交</el-button>
@@ -159,6 +168,7 @@ import { getApplyMainSettings } from "../api/basicSettings";
 export default {
   data() {
     return {
+      useSpecialAct: false,
       formValidationRes: [],
       readOnly: false,
       apply_id: 0,
@@ -226,6 +236,12 @@ export default {
       Object.keys(form.work).forEach(key => {
         this.$refs[key][0].setContent(form.work[key]);
       });
+      // remove tag
+      if(form.other_academic.includes("PBokGE2nY2Qp8ukMBqqEFIFd5O3jc96V")) {
+        this.useSpecialAct = true;
+        form.other_academic_awards.replace("PBokGE2nY2Qp8ukMBqqEFIFd5O3jc96V", "");
+      } else this.useSpecialAct = false;
+      // end remove tag
       this.other_academic_awards = form.other_academic;
     },
     withdrawApplyInfo() {
@@ -415,6 +431,11 @@ export default {
         form_res.work[item.name] = that.$refs[item.name][0].getContent();
       });
       form_res["other_academic"] = that.other_academic_awards;
+      // remove tag
+      if(that.useSpecialAct) {
+        form_res["other_academic"] += "\nPBokGE2nY2Qp8ukMBqqEFIFd5O3jc96V";
+      }
+      // end remove tag
       that.$http
         .post("sendApplyInfo", {
           username: window.sessionStorage.username,

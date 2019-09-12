@@ -93,7 +93,7 @@
     <el-row type="flex" justify="start" style="margin-top: 30px">
       <el-col align="start">
         <h1>
-          其他学术奖项
+          其他加分项(如专项活动对应的Token)
           <el-tooltip
             class="item"
             effect="dark"

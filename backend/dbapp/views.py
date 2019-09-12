@@ -476,7 +476,7 @@ def filterAndSort(req):
                 except Exception as e:
                     print(e)
             ## return results
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering)
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering, "user_id_id")
             pages = Paginator(queries, 15)
             page = pages.page(data['page'])
             result['data'] = { 'page_cnt': pages.num_pages, 'count': pages.count, 'curr_entries': [] }
@@ -541,7 +541,7 @@ def exportExcel(req):
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
             ## return results
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering)
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True).order_by(ordering, "user_id_id")
             
             response = HttpResponse(content_type='application/vnd.ms-excel')
             response['Content-Disposition'] = 'attachment;filename=order.xls'

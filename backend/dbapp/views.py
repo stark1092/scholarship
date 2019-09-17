@@ -256,6 +256,10 @@ def userlogin_stucs_cb(req):
                 user, created = models.User.objects.get_or_create(
                     student_id=stu['student_id'], defaults=stu_info)
                 models.LogAction('login', user, getIpAddr(req))
+                ## in some cases, OAuth API may return empty name
+                if(user.name == ''):
+                    user.name = stu['fullname']
+                    user.save(force_update=True)
                 result['token'] = createToken(user)
                 result['user_type'] = user.user_type
                 result['status'] = 0

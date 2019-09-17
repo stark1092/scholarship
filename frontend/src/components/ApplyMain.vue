@@ -239,7 +239,7 @@ export default {
       // remove tag
       if(form.other_academic.includes("PBokGE2nY2Qp8ukMBqqEFIFd5O3jc96V")) {
         this.useSpecialAct = true;
-        form.other_academic_awards.replace("PBokGE2nY2Qp8ukMBqqEFIFd5O3jc96V", "");
+        form.other_academic = form.other_academic.replace("PBokGE2nY2Qp8ukMBqqEFIFd5O3jc96V", "");
       } else this.useSpecialAct = false;
       // end remove tag
       this.other_academic_awards = form.other_academic;

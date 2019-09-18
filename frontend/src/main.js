@@ -14,7 +14,7 @@ import 'element-ui/lib/theme-chalk/index.css'
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
-import API_URL from './config'
+import CONFIG from './config'
 
 Vue.use(ElementUI)
 Vue.use(VueResource)
@@ -22,7 +22,7 @@ Vue.use(VueQuillEditor)
 Vue.use(VueObserveVisibility)
 Vue.use(Router)
 Vue.config.productionTip = false
-Vue.http.options.root = API_URL
+Vue.http.options.root = CONFIG.API_URL
 
 /* eslint-disable no-new */
 new Vue({

@@ -195,7 +195,7 @@ class ScoreCalculator(object):
         self.has_counter = ('item_counter' in rule_dict.keys())
         if(self.has_counter):
             self.counter_dict = rule_dict['item_counter']
-        for key, item in rule_dict['academic'].items():
+        for key, item in rule_dict['academic']['items'].items():
             time_validator = self.timeValidators if 'time_validator_filter' not in item.keys() else []
             if('time_validator' in rule_dict.keys() and 'time_validator_filter' in item.keys()):
                 for idx in item['time_validator_filter']:
@@ -205,8 +205,11 @@ class ScoreCalculator(object):
                 self.academic_scorer[key] = ItemScorer(item, time_validator=time_validator, item_counter_rule=rule_dict['item_counter']['academic'][key])
             else:
                 self.academic_scorer[key] = ItemScorer(item, time_validator=time_validator)
-
-        for key, item in rule_dict['work'].items():
+        if('limit' in rule_dict['academic'].keys()):
+            self.academic_limit = eval(str(rule_dict['academic']['limit']))
+        else:
+            self.academic_limit = 0
+        for key, item in rule_dict['work']['items'].items():
             time_validator = self.timeValidators if 'time_validator_filter' not in item.keys() else []
             if('time_validator' in rule_dict.keys() and 'time_validator_filter' in item.keys()):
                 for idx in item['time_validator_filter']:
@@ -216,10 +219,14 @@ class ScoreCalculator(object):
                 self.work_scorer[key] = ItemScorer(item, time_validator=time_validator, item_counter_rule=rule_dict['item_counter']['work'][key])
             else:
                 self.work_scorer[key] = ItemScorer(item, time_validator=time_validator)
+        if('limit' in rule_dict['work'].keys()):
+            self.work_limit = eval(str(rule_dict['work']['limit']))
+        else:
+            self.work_limit = 0
         print("Scorer initialization done...")
             
 
-    def getScore(self, item_dict):
+    def getScore(self, item_dict, extra_score=0):
         ## academic_score
         academic = 0.0
         counter_res = {'academic': {}, 'work': {}}
@@ -233,6 +240,8 @@ class ScoreCalculator(object):
                     wrong_time = True
             elif(_):
                 wrong_time = True
+        if(self.academic_limit > 0):
+            academic = min(academic, self.academic_limit)
         work = 0.0
         for key, item in item_dict['work'].items():
             score, _ = self.work_scorer[key].getScore(item)
@@ -243,7 +252,9 @@ class ScoreCalculator(object):
                     wrong_time = True
             elif(_):
                 wrong_time = True
-        formula = self.__formulaReplacer(self.final_formula, academic=academic, work=work)
+        if(self.work_limit > 0):
+            work = min(work, self.work_limit)
+        formula = self.__formulaReplacer(self.final_formula, academic=academic, work=work, extra=extra_score)
         try:
             return eval(formula), academic, work, counter_res, wrong_time
         except Exception as e:

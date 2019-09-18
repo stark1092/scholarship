@@ -11,6 +11,7 @@ import ApplyMain from '@/components/ApplyMain'
 import ApplyList from '@/components/ApplyList'
 import HelloWorld from '@/components/HelloWorld'
 import StucsLogin from '@/components/StucsLogin'
+import CONFIG from '../config'
 
 const beforeEachHook = (to, from, next) => {
   if (to.meta.title) {
@@ -42,6 +43,7 @@ const adminMeta = {
 
 const router = new Router({
   mode: 'history',
+  base: CONFIG.ROUTER_BASE_URL,
   routes: [
     {
       path: '/',

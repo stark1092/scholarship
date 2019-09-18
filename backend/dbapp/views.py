@@ -650,57 +650,115 @@ def exportExcel(req):
                         # print("Not Empty")
                         academic_num = 0
                         details = json.loads(item.json)
+                        academic_str = ''
                         if('academic' in details.keys()):
                             # print("academic")
-                            adademics = details['academic']
+                            academics = details['academic']
                             # print(extras)
-                            if('conf_paper' in adademics.keys()) :
-                                for paper in adademics['conf_paper']:
-                                    #print(paper)
-                                    sheet2.write(seq+academic_num,3,str(paper))
-                                    #print(paper)
+                            if('conf_paper' in academics.keys()) :
+                                for paper in academics['conf_paper']:
                                     academic_num += 1
-                            if('journal_paper' in adademics.keys()) :
-                                for paper in adademics['journal_paper']:
-                                    sheet2.write(seq+academic_num,3,str(paper))
+                                    ccfRank = paper['ccfRank']
+                                    isFirstAuthor = '一作' if paper['isFirstAuthor'] == '1' else '非一作'
+                                    author = paper['author']
+                                    conf = paper['conf']
+                                    title = paper['paper']
+                                    date = paper['date']
+                                    numPages = paper['numPages']
+                                    category = paper['category'] + ' paper'
+                                    isLastYear = '最后一年申请' if paper['isLastYear'] == '1' else '不是最后一年申请'
+
+                                    academic_str += '%s. CCF (%s); ' % (academic_num, ccfRank)
+                                    academic_str += '; '.join([isFirstAuthor, conf, title, date, numPages, category, isLastYear, author]) + '\n'
+                            if('journal_paper' in academics.keys()) :
+                                for paper in academics['journal_paper']:
                                     academic_num += 1
-                            if('patent' in adademics.keys()) :
-                                for paper in adademics['patent']:
-                                    sheet2.write(seq+academic_num,3,str(paper))
+                                    ccfRank = paper['ccfRank']
+                                    isFirstAuthor = '一作' if paper['isFirstAuthor'] == '1' else '非一作'
+                                    author = paper['author']
+                                    journal = paper['journal']
+                                    title = paper['paper']
+                                    date = paper['date']
+                                    numPages = paper['numPages']
+                                    category = paper['category'] + ' paper'
+                                    isLastYear = '最后一年申请' if paper['isLastYear'] == '1' else '不是最后一年申请'
+
+                                    academic_str += '%s. CCF (%s); ' % (academic_num, ccfRank)
+                                    academic_str += '; '.join([isFirstAuthor, journal, title, date, numPages, category, isLastYear, author]) + '\n'
+                            if('patent' in academics.keys()) :
+                                for patent in academics['patent']:
                                     academic_num += 1
-                            if('project' in adademics.keys()) :
-                                for project in adademics['project']:
-                                    sheet2.write(seq+academic_num,3,str(project))
+                                    isFirstAuthor = '一作' if patent['isFirstAuthor'] == '1' else '非一作'
+                                    author = patent['author']
+                                    name = patent['name']
+                                    date = patent['date']
+                                    number = patent['number']
+                                    isLastYear = '最后一年申请' if patent['isLastYear'] == '1' else '不是最后一年申请'
+
+                                    academic_str += '%s. ' % (academic_num)
+                                    academic_str += '; '.join([isFirstAuthor, name, date, number, isLastYear, author]) + '\n'
+                            if('project' in academics.keys()) :
+                                for project in academics['project']:
                                     academic_num += 1
-                            if('intl_standard' in adademics.keys()) :
-                                for standard in adademics['intl_standard']:
-                                    sheet2.write(seq+academic_num,3,str(standard))
+                                    author = project['author']
+                                    name = project['name']
+                                    date = project['date']
+                                    _type = project['type']
+                                    isLastYear = '最后一年申请' if project['isLastYear'] == '1' else '不是最后一年申请'
+
+                                    academic_str += '%s. ' % (academic_num)
+                                    academic_str += '; '.join([name, date, _type, isLastYear, author]) + '\n'
+                            if('intl_standard' in academics.keys()) :
+                                for standard in academics['intl_standard']:
                                     academic_num += 1
-                            if('conf_award' in adademics.keys()) :
-                                for award in adademics['conf_award']:
-                                    sheet2.write(seq+academic_num,3,str(award))
+                                    author = standard['author']
+                                    name = standard['name']
+                                    date = standard['date']
+                                    isLastYear = '最后一年申请' if standard['isLastYear'] == '1' else '不是最后一年申请'
+
+                                    academic_str += '%s. ' % (academic_num)
+                                    academic_str += '; '.join([name, date, isLastYear, author]) + '\n'
+                            if('conf_award' in academics.keys()) :
+                                for paper in academics['conf_award']:
                                     academic_num += 1      
+                                    author = paper['author']
+                                    confName = paper['confName']
+                                    awardName = paper['awardName']
+                                    ccfCategory = paper['ccfCategory']
+                                    date = paper['date']
+                                    isLastYear = '最后一年申请' if paper['isLastYear'] == '1' else '不是最后一年申请'
+
+                                    academic_str += '%s. CCF (%s); ' % (academic_num, ccfCategory)
+                                    academic_str += '; '.join([confName, awardName, date, isLastYear, author]) + '\n'
+                            sheet2.write(seq, 3, academic_str.strip())
 
                         work_num = 0
                         if('work' in details.keys()):
-                            # print("academic")
                             works = details['work']
+                            work_str = ''
                             if('post' in works.keys()) :
                                 for work in works['post']:
-                                    sheet2.write(seq+work_num,4,str(work))
                                     work_num += 1
+                                    name = work['name']
+                                    _class = work['class']
+                                    date = work['startDate'] + ' 至 ' + work['endDate']
+
+                                    work_str += '%s. %s; ' % (work_num, _class)
+                                    work_str += '; '.join([name, date]) + '\n'
                             if('accu_pro' in works.keys()) :
                                 for work in works['accu_pro']:
-                                    sheet2.write(seq+work_num,4,str(work))
                                     work_num += 1
+                                    content = work['content']
+                                    _class = work['class']
+                                    date = work['date']
 
-                        other_num = 0
+                                    work_str += '%s. %s; ' % (work_num, _class)
+                                    work_str += '; '.join([content, date]) + '\n'
+                            sheet2.write(seq, 4, work_str.strip())
+
                         if('other_academic' in details.keys()):
-                            # print("academic")
-                            other_num += 1
-                            sheet2.write(seq,5,str(details['other_academic']))
-                        seq+=max(academic_num,work_num,other_num)
-                        
+                            sheet2.write(seq, 5, str(details['other_academic']))
+
                     except Exception as e:
                         print(e)
             output = BytesIO()

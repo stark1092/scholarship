@@ -231,12 +231,16 @@ def userlogin_stucs_cb(req):
                     'redirect_uri': hostname + '/userlogin_stucs_cb',
                     'client_id': stucs_client_id,
                     'client_secret': stucs_client_secret}
-            res = requests.post(
-                'https://stu.cs.tsinghua.edu.cn/api/v2/access_token', data=data)
+            try:
+                res = requests.post(
+                'https://stu.cs.tsinghua.edu.cn/api/v2/access_token', data=data, timeout=5)
+            except requests.exceptions.RequestException:
+                result['message'] = '授权服务器无响应'
+                raise Exception("Failed to authorize")
             res = json.loads(res.text)
             if(not res or not "access_token" in res):
-                result['message'] = '授权失败'
-                return JsonResponse(result)
+                	result['message'] = '授权失败'
+                	return JsonResponse(result)
             token = res['access_token']
             stu = getStudentInfo(token)
             if(not stu or not 'user' in stu):

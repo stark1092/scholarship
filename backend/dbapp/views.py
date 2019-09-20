@@ -1166,7 +1166,7 @@ def sendApplyInfo(req):
         try:
             data = json.loads(req.body)
             model = models.ApplyInfoSetting.objects.get(
-                apply_info_id=data['data']['scholarship_id'])
+                apply_info_id=data['data']['scholarship_id'], can_apply=True)
             user = models.User.objects.get(username=data['username'])
             models.ApplyInfo.objects.update_or_create(user_id=user, apply_info_id=model,
                                                       defaults={'apply_date': datetime.datetime.utcnow().replace(tzinfo=utc),

@@ -197,7 +197,7 @@ Example return data of this API
 
 def getStudentInfo(token):
     res = requests.get(
-        'https://stu.cs.tsinghua.edu.cn/api/v2/userinfo?access_token=' + token)
+        'https://stu.cs.tsinghua.edu.cn:4443/api/v2/userinfo?access_token=' + token)
     return json.loads(res.text)
 # utils end
 
@@ -233,7 +233,7 @@ def userlogin_stucs_cb(req):
                     'client_secret': stucs_client_secret}
             try:
                 res = requests.post(
-                'https://stu.cs.tsinghua.edu.cn/api/v2/access_token', data=data, timeout=5)
+                'https://stu.cs.tsinghua.edu.cn:4443/api/v2/access_token', data=data, timeout=5)
             except requests.exceptions.RequestException:
                 result['message'] = '授权服务器无响应'
                 raise Exception("Failed to authorize")
@@ -1170,7 +1170,7 @@ def sendApplyInfo(req):
         try:
             data = json.loads(req.body)
             model = models.ApplyInfoSetting.objects.get(
-                apply_info_id=data['data']['scholarship_id'])
+                apply_info_id=data['data']['scholarship_id'], can_apply=True)
             user = models.User.objects.get(username=data['username'])
             models.ApplyInfo.objects.update_or_create(user_id=user, apply_info_id=model,
                                                       defaults={'apply_date': datetime.datetime.utcnow().replace(tzinfo=utc),

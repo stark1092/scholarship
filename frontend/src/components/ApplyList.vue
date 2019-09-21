@@ -189,7 +189,7 @@ export default {
       },
       linkCb: function(link) {
         let route = this.$router.resolve({
-          path: "/home/view_apply",
+          path: "/view_apply",
           query: {
             stu_num: link,
             scholarship: main_ptr.filter.conditions.scholarship_name

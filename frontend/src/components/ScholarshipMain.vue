@@ -66,7 +66,7 @@
           </div>
         </el-aside>
         <el-main>
-          <router-view></router-view>
+          <router-view :key="$route.fullPath"></router-view>
         </el-main>
       </el-container>
       <el-footer class="main-footer" height="50px">

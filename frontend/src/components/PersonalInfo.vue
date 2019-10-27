@@ -469,7 +469,7 @@ export default {
   },
   data() {
     return {
-      is_privileged: window.sessionStorage.user_type === "1" || window.sessionStorage.user_type === "2",
+      is_privileged: window.sessionStorage.user_type === "1",
       perinfo: {
         name: "",
         class_name: "",

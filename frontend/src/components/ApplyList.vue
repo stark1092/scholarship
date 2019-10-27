@@ -232,9 +232,9 @@ export default {
       filter: {
         conditions: {
           scholarship_name: "",
-          student_type: "",
+          student_type: this.isStudent ? "":"doctor",
           department: "",
-          ordering: ""
+          ordering: this.isStudent ? "":"tot_score"
         },
         scholarship_names: [],
         student_types: getRoughStudentTypeList(),

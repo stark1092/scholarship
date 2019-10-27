@@ -19,63 +19,67 @@
         style="width: 100%;"
         :cell-style="{'vertical-align':'middle'}"
       >
-        <el-table-column
-          v-for="(col,index) in model.tableColumn"
-          v-bind:key="index"
-          :label="col.label"
-          :width="col.colWidth"
-        >
-          <template slot="header">
-            <span>{{ col.label }}</span>
-            <el-button
-              icon="el-icon-question"
-              circle
-              v-if="col.note != null && col.note != ''"
-              @click="displayHelpMsg(col.note)"
-            ></el-button>
-          </template>
-          <template slot-scope="scope">
-            <el-form-item
-              :prop="'tableData.' + scope.$index + '.' + col.name"
-              style="margin-bottom: 0"
-              :rules="[{ required: true, message: '字段不能为空', trigger: 'blur' }]"
-            >
-              <el-input
-                v-if="col.type === 'input'"
-                v-model="model.tableData[scope.$index][col.name]"
-                :disabled="isReadOnly"
-              ></el-input>
-              <el-date-picker
-                v-if="col.type === 'date-picker'"
-                v-model="model.tableData[scope.$index][col.name]"
-                :disabled="isReadOnly"
-                format="yyyy 年 MM 月 dd 日"
-                value-format="yyyy-MM-dd"
-              ></el-date-picker>
-              <el-select
-                v-if="col.type === 'selection'"
-                v-model="model.tableData[scope.$index][col.name]"
-                :disabled="isReadOnly"
+        <div v-for="(col,index) in model.tableColumn"
+            v-bind:key="index">
+          <el-table-column
+            v-if="!col.hidden"
+            :label="col.label"
+            :width="col.colWidth"
+          >
+            <template slot="header">
+              <span>{{ col.label }}</span>
+              <el-button
+                icon="el-icon-question"
+                circle
+                v-if="col.note != null && col.note != ''"
+                @click="displayHelpMsg(col.note)"
+              ></el-button>
+            </template>
+            <template slot-scope="scope">
+              <el-form-item
+                :prop="'tableData.' + scope.$index + '.' + col.name"
+                style="margin-bottom: 0"
+                :rules="[{ required: true, message: '字段不能为空', trigger: 'blur' }]"
               >
-                <el-option
-                  v-for="item in col.data"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                ></el-option>
-              </el-select>
-              <el-input-number
-                v-if="col.type === 'input-number'"
-                v-model="model.tableData[scope.$index][col.name]"
-                :min="col.min"
-                :max="col.max"
-                :disabled="isReadOnly"
-              ></el-input-number>
-              <span v-if="col.type === 'seq'">{{ scope.$index + 1 }}</span>
-              <span v-if="col.type === 'text'">{{ model.tableData[scope.$index][col.name] }}</span>
-            </el-form-item>
-          </template>
-        </el-table-column>
+                <el-input
+                  v-if="col.type === 'input'"
+                  type="textarea"
+                  autosize
+                  v-model="model.tableData[scope.$index][col.name]"
+                  :disabled="isReadOnly"
+                ></el-input>
+                <el-date-picker
+                  v-if="col.type === 'date-picker'"
+                  v-model="model.tableData[scope.$index][col.name]"
+                  :disabled="isReadOnly"
+                  format="yyyy 年 MM 月 dd 日"
+                  value-format="yyyy-MM-dd"
+                ></el-date-picker>
+                <el-select
+                  v-if="col.type === 'selection'"
+                  v-model="model.tableData[scope.$index][col.name]"
+                  :disabled="isReadOnly"
+                >
+                  <el-option
+                    v-for="item in col.data"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  ></el-option>
+                </el-select>
+                <el-input-number
+                  v-if="col.type === 'input-number'"
+                  v-model="model.tableData[scope.$index][col.name]"
+                  :min="col.min"
+                  :max="col.max"
+                  :disabled="isReadOnly"
+                ></el-input-number>
+                <span v-if="col.type === 'seq'">{{ scope.$index + 1 }}</span>
+                <span v-if="col.type === 'text'">{{ model.tableData[scope.$index][col.name] }}</span>
+              </el-form-item>
+            </template>
+          </el-table-column>
+        </div>
         <el-table-column v-if="!isReadOnly">
           <template slot-scope="scope">
             <el-button

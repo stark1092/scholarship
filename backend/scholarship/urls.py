@@ -28,6 +28,7 @@ urlpatterns = [
     path('sendNotifyUpload', views.sendNotifyUpload),
     path('delNotify', views.delNotify),
     path('filterAndSort', views.filterAndSort),
+    path('filterAndSortPrivileged', views.filterAndSortAdminTeacher),
     path('exportExcel', views.exportExcel),
     path('changePassword', views.changePassword),
     ### material APIs

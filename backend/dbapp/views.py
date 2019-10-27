@@ -514,7 +514,7 @@ def filterAndSortAdminTeacher(req):
                         t_num += 1
                         t_score += item.score
                     entry.teacher_score = t_score
-                    entry.teacher_score_avg = float(t_score) / t_num
+                    entry.teacher_score_avg = float(t_score) / t_num if t_num else 0
                     entry.is_teacher_score_updated = True
                     entry.save()
                 except Exception as e:
@@ -1400,6 +1400,8 @@ def setApplyInfoScore(req):
                 'apply_id': apply,
                 'score': data['data']['score']
             })
+            apply.is_teacher_score_updated = False
+            apply.save(force_update=True)
             result['status'] = 0
         except Exception as e:
             print(e)

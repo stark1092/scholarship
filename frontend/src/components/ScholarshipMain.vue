@@ -194,11 +194,6 @@ export default {
           icon: "el-icon-message"
         },
         {
-          link: "/home/view_apply",
-          name: "查看申请",
-          icon: "el-icon-reading"
-        },
-        {
           link: "/home/apply_list",
           name: "申请列表",
           icon: "el-icon-tickets"

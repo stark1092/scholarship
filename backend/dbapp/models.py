@@ -148,9 +148,12 @@ class ApplyInfo(models.Model):
     extra_score = models.FloatField(null=False, default=0)
     academic_score = models.FloatField(null=False, default=0)
     work_score = models.FloatField(null=False, default=0)
+    teacher_score = models.FloatField(null=False, default=0)
+    teacher_score_avg = models.FloatField(null=False, default=0)
     wrong_time = models.BooleanField(default=False)
     extra_info = models.TextField()
     is_score_updated = models.BooleanField(default=False)
+    is_teacher_score_updated = models.BooleanField(default=False)
     is_user_confirm = models.BooleanField(default=False)  ### If user saves temporarily, this field will be False
     report_num = models.IntegerField(default=0)
 

@@ -14,7 +14,6 @@ import 'element-ui/lib/theme-chalk/index.css'
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
-import CONFIG from './config'
 
 Vue.use(ElementUI)
 Vue.use(VueResource)
@@ -22,12 +21,11 @@ Vue.use(VueQuillEditor)
 Vue.use(VueObserveVisibility)
 Vue.use(Router)
 Vue.config.productionTip = false
-Vue.http.options.root = CONFIG.API_URL
+Vue.http.options.root = process.env.VUE_APP_API_URL
 
 /* eslint-disable no-new */
 new Vue({
-  el: '#app',
   router,
-  components: { App },
-  template: '<App/>'
-})
+  render: h => h(App)
+}).$mount('#app')
+

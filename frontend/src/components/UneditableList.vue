@@ -7,7 +7,7 @@
         :label="col.label"
         :width="col.colWidth"
       >
-        <template slot="header" slot-scope="scope">
+        <template slot="header">
           <span>{{ col.label }}</span>
           <el-button
             icon="el-icon-question"

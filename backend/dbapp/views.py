@@ -20,12 +20,14 @@ from dbapp import scorer
 import time
 import xlwt
 from io import BytesIO
+
 sys.path.append('../')
 
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 scorer_executor = ThreadPoolExecutor(max_workers=scorer_workers)
 scorer_map = {}
+
 
 def scorerInBackGround(*arg, **kwargs):
     user_id = kwargs['user']
@@ -35,11 +37,13 @@ def scorerInBackGround(*arg, **kwargs):
     try:
         user = models.User.objects.get(user_id=user_id)
         apply_info = models.ApplyInfoSetting.objects.get(apply_info_id=apply_info_id)
-        entry = models.ApplyInfo.objects.get(user_id=user,apply_info_id=apply_info)
-        if(apply_info.apply_score_rule_id.apply_score_rule_id not in scorer_map):
-            scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id] = scorer.ScoreCalculator(json.loads(apply_info.apply_score_rule_id.json))
+        entry = models.ApplyInfo.objects.get(user_id=user, apply_info_id=apply_info)
+        if (apply_info.apply_score_rule_id.apply_score_rule_id not in scorer_map):
+            scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id] = scorer.ScoreCalculator(
+                json.loads(apply_info.apply_score_rule_id.json))
         print("Get entry succesfully, evaluating...")
-        score_res = scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id].getScore(json.loads(entry.json), entry.extra_score)
+        score_res = scorer_map[apply_info.apply_score_rule_id.apply_score_rule_id].getScore(json.loads(entry.json),
+                                                                                            entry.extra_score)
         entry.score = score_res[0]
         entry.academic_score = score_res[1]
         entry.work_score = score_res[2]
@@ -53,13 +57,15 @@ def scorerInBackGround(*arg, **kwargs):
     finally:
         connections.close_all()
 
+
 # utils start
 
 def createToken(user):
     # update token if already exists
     token = str(uuid.uuid4())
-    models.SessionToken.objects.update_or_create(user=user, 
-        defaults={'user': user, 'token': token, 'set_time': datetime.datetime.utcnow().replace(tzinfo=utc)})
+    models.SessionToken.objects.update_or_create(user=user,
+                                                 defaults={'user': user, 'token': token,
+                                                           'set_time': datetime.datetime.utcnow().replace(tzinfo=utc)})
     return token
 
 
@@ -71,10 +77,11 @@ def updateToken(user):
     except Exception as e:
         print(e)
 
+
 def getToken(user, expire_time):
     try:
         obj = models.SessionToken.objects.get(user=user)
-        if(datetime.datetime.utcnow().replace(tzinfo=utc) - obj.set_time >= datetime.timedelta(seconds=expire_time)):
+        if (datetime.datetime.utcnow().replace(tzinfo=utc) - obj.set_time >= datetime.timedelta(seconds=expire_time)):
             return ''
         else:
             return obj.token
@@ -82,12 +89,13 @@ def getToken(user, expire_time):
         print(e)
         return ''
 
+
 def check_login(f):
     @wraps(f)
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
-            if('username' in data.keys() and 'token' in data.keys()):
+            if ('username' in data.keys() and 'token' in data.keys()):
                 pass
             else:
                 raise Exception()
@@ -96,13 +104,14 @@ def check_login(f):
         try:
             user = models.User.objects.get(username=data['username'])
             token = getToken(user, token_exp_time)
-            if(token == data['token']):
+            if (token == data['token']):
                 updateToken(user)
                 return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
+
     return inner
 
 
@@ -111,7 +120,7 @@ def check_teacher(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
-            if('username' in data.keys() and 'token' in data.keys()):
+            if ('username' in data.keys() and 'token' in data.keys()):
                 pass
             else:
                 raise Exception()
@@ -120,13 +129,14 @@ def check_teacher(f):
         try:
             user = models.User.objects.get(username=data['username'])
             token = getToken(user, token_exp_time)
-            if(token == data['token'] and user.user_type == 1):
+            if (token == data['token'] and user.user_type == 1):
                 updateToken(user)
                 return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
+
     return inner
 
 
@@ -135,7 +145,7 @@ def check_admin(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
-            if('username' in data.keys() and 'token' in data.keys()):
+            if ('username' in data.keys() and 'token' in data.keys()):
                 pass
             else:
                 raise Exception()
@@ -144,13 +154,14 @@ def check_admin(f):
         try:
             user = models.User.objects.get(username=data['username'])
             token = getToken(user, token_exp_time)
-            if(token == data['token'] and user.user_type == 2):
+            if (token == data['token'] and user.user_type == 2):
                 updateToken(user)
                 return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
+
     return inner
 
 
@@ -159,7 +170,7 @@ def check_admin_teacher(f):
     def inner(req, *arg, **kwargs):
         try:
             data = json.loads(req.body)
-            if('username' in data.keys() and 'token' in data.keys()):
+            if ('username' in data.keys() and 'token' in data.keys()):
                 pass
             else:
                 raise Exception()
@@ -168,13 +179,14 @@ def check_admin_teacher(f):
         try:
             user = models.User.objects.get(username=data['username'])
             token = getToken(user, token_exp_time)
-            if(token == data['token'] and (user.user_type == 1 or user.user_type == 2)):
+            if (token == data['token'] and (user.user_type == 1 or user.user_type == 2)):
                 updateToken(user)
                 return f(req, *arg, **kwargs)
             else:
                 return JsonResponse({'status': -1, 'message': '用户未登录'})
         except:
             return JsonResponse({'status': -1, 'message': '非法请求'})
+
     return inner
 
 
@@ -199,26 +211,28 @@ def getStudentInfo(token):
     res = requests.get(
         'https://stu.cs.tsinghua.edu.cn/api/v2/userinfo?access_token=' + token)
     return json.loads(res.text)
+
+
 # utils end
 
 # Create your views here.
 
 
 def userlogin_stucs(req):
-    if(req.method == 'GET'):
+    if (req.method == 'GET'):
         data = {'response_type': 'code',
                 'client_id': stucs_client_id,
                 'redirect_uri': hostname + '/userlogin_stucs_cb',
                 'scope': 'user',
                 'state': 'thucs'}
         result = {'status': 0, 'url': 'https://stu.cs.tsinghua.edu.cn/api/v2/authorize?' +
-                  urllib.parse.urlencode(data)}
+                                      urllib.parse.urlencode(data)}
         return JsonResponse(result)
 
 
 @csrf_exempt
 def userlogin_stucs_cb(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -233,17 +247,17 @@ def userlogin_stucs_cb(req):
                     'client_secret': stucs_client_secret}
             try:
                 res = requests.post(
-                'https://stu.cs.tsinghua.edu.cn/api/v2/access_token', data=data, timeout=5)
+                    'https://stu.cs.tsinghua.edu.cn/api/v2/access_token', data=data, timeout=5)
             except requests.exceptions.RequestException:
                 result['message'] = '授权服务器无响应'
                 raise Exception("Failed to authorize")
             res = json.loads(res.text)
-            if(not res or not "access_token" in res):
-                	result['message'] = '授权失败'
-                	return JsonResponse(result)
+            if (not res or not "access_token" in res):
+                result['message'] = '授权失败'
+                return JsonResponse(result)
             token = res['access_token']
             stu = getStudentInfo(token)
-            if(not stu or not 'user' in stu):
+            if (not stu or not 'user' in stu):
                 result['message'] = '授权失败'
                 return JsonResponse(result)
             stu = stu['user']
@@ -254,14 +268,14 @@ def userlogin_stucs_cb(req):
                         'student_id': stu['student_id'],
                         'is_project_started': False}
             # Allow teachers to login via Accounts9
-            if(stu['student_type'] == 'staff'):
+            if (stu['student_type'] == 'staff'):
                 stu_info['user_type'] = 1
             try:
                 user, created = models.User.objects.get_or_create(
                     student_id=stu['student_id'], defaults=stu_info)
                 models.LogAction('login', user, getIpAddr(req))
                 ## in some cases, OAuth API may return empty name
-                if(user.name == ''):
+                if (user.name == ''):
                     user.name = stu['fullname']
                     user.save(force_update=True)
                 result['token'] = createToken(user)
@@ -280,17 +294,17 @@ def userlogin_stucs_cb(req):
 
 @csrf_exempt
 def userlogin(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
             user = models.User.objects.get(username=data['username'])
-            if(user.user_type == 0 or user.password == ""):
+            if (user.user_type == 0 or user.password == ""):
                 result['message'] = '登录失败，该用户禁止使用密码登录'
                 models.LogAction('login_failure', user, getIpAddr(
                     req), 'User is not allowed to login via password')
                 return JsonResponse(result)
-            elif(user.password != data['password']):
+            elif (user.password != data['password']):
                 result['message'] = '用户名或密码错误'
                 models.LogAction('login_failure', user,
                                  getIpAddr(req), 'Wrong password')
@@ -312,12 +326,12 @@ def userlogin(req):
 @check_login
 @csrf_exempt
 def getPersonalInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
             res = None
-            if('stu_num' in data.keys()):
+            if ('stu_num' in data.keys()):
                 res = models.User.objects.get(student_id=data['stu_num'])
             else:
                 res = models.User.objects.get(username=data['username'])
@@ -336,7 +350,7 @@ def getPersonalInfo(req):
 @check_login
 @csrf_exempt
 def changePersonalInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -356,7 +370,7 @@ def changePersonalInfo(req):
 @check_login
 @csrf_exempt
 def getNotify(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -379,7 +393,7 @@ def getNotify(req):
 @check_admin
 @csrf_exempt
 def delNotify(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -396,7 +410,7 @@ def delNotify(req):
 @check_admin
 @csrf_exempt
 def sendNotify(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -412,7 +426,7 @@ def sendNotify(req):
 
 @csrf_exempt
 def sendNotifyUpload(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         try:
             result = {'status': 1}
             username = req.POST.get('username')
@@ -420,8 +434,8 @@ def sendNotifyUpload(req):
             f = req.FILES.get('file')
             title = req.POST.get('title')
             user = models.User.objects.get(username=username)
-            if(token == getToken(user, token_exp_time)):
-                if(user.user_type == 2):
+            if (token == getToken(user, token_exp_time)):
+                if (user.user_type == 2):
                     updateToken(user)
                     # do real work here
                     f.seek(0)
@@ -442,36 +456,42 @@ def sendNotifyUpload(req):
             return JsonResponse(result)
 
 
-@check_login
+@check_admin_teacher
 @csrf_exempt
-def filterAndSort(req):
-    if(req.method == 'POST'):
-        result = { 'status' : 1 }
+def filterAndSortAdminTeacher(req):
+    if (req.method == 'POST'):
+        result = {'status': 1}
         try:
             data = json.loads(req.body)
             data = data['data']
             ordering = None
-            if(data['ordering'] == 'tot_score'):
+            if (data['ordering'] == 'tot_score'):
                 ordering = "-score"
-            elif(data['ordering'] == 'academic_score'):
+            elif (data['ordering'] == 'academic_score'):
                 ordering = "-academic_score"
-            elif(data['ordering'] == 'work_score'):
+            elif (data['ordering'] == 'work_score'):
                 ordering = "-work_score"
+            elif (data['ordering'] == 'teacher_score_tot'):
+                ordering = "-teacher_score"
+            elif (data['ordering'] == 'teacher_score_avg'):
+                ordering = "-teacher_score_avg"
             filter = {}
             filter['apply_info_id'] = data['scholarship_name']
-            if(data['department'] != ''):
+            if (data['department'] != ''):
                 filter['user_id__department'] = data['department']
-            if(data['student_type'] == 'master'):
+            if (data['student_type'] == 'master'):
                 filter['user_id__student_type'] = 'master'
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
+            # eval normal scores
             queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
             for entry in queries.iterator():
                 try:
                     print("Found entries not evaluated, start evaluating...")
                     scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
-                    if(scorer_id not in scorer_map):
-                        scorer_map[scorer_id] = scorer.ScoreCalculator(json.loads(entry.apply_info_id.apply_score_rule_id.json))
+                    if (scorer_id not in scorer_map):
+                        scorer_map[scorer_id] = scorer.ScoreCalculator(
+                            json.loads(entry.apply_info_id.apply_score_rule_id.json))
                     score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
                     entry.score = score_res[0]
                     entry.academic_score = score_res[1]
@@ -483,32 +503,52 @@ def filterAndSort(req):
                     print(score_res)
                 except Exception as e:
                     print(e)
+            # eval teacher scores
+            queries = models.ApplyInfo.objects.filter(**filter, is_teacher_score_updated=False, is_user_confirm=True)
+            for entry in queries.iterator():
+                try:
+                    t_score = 0
+                    t_num = 0
+                    teacher_scores = models.TeacherScore.objects.filter(apply_id=entry)
+                    for item in teacher_scores:
+                        t_num += 1
+                        t_score += item.score
+                    entry.teacher_score = t_score
+                    entry.teacher_score_avg = float(t_score) / t_num
+                    entry.is_teacher_score_updated = True
+                    entry.save()
+                except Exception as e:
+                    print(e)
             ## return results
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(ordering, "user_id_id")
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(
+                ordering, "user_id_id")
             pages = Paginator(queries, 15)
             page = pages.page(data['page'])
-            result['data'] = { 'page_cnt': pages.num_pages, 'count': pages.count, 'curr_entries': [] }
+            result['data'] = {'page_cnt': pages.num_pages, 'count': pages.count, 'curr_entries': []}
             seq = (data['page'] - 1) * 15
             for item in page.object_list:
-                entry = {'seq': seq, 'student_num': item.user_id.student_id, 'name': item.user_id.name, 
-                'academic_score': item.academic_score, 'work_score': item.work_score, 'tot_score': item.score,
-                'num_report': item.report_num }
+                entry = {'seq': seq, 'student_num': item.user_id.student_id, 'name': item.user_id.name,
+                         'academic_score': item.academic_score, 'work_score': item.work_score, 'tot_score': item.score,
+                         'teacher_score': item.teacher_score, 'teacher_score_avg': item.teacher_score_avg,
+                         'department': models.DEPARTMENT_TO_NAME[item.user_id.department],
+                         'instructor': item.user_id.instructor,
+                         'num_report': item.report_num}
                 seq += 1
                 ## merge A,B,C,O and patent nums
-                if(item.extra_info != ""):
+                if (item.extra_info != ""):
                     try:
                         extras = json.loads(item.extra_info)
-                        if('academic' in extras.keys()):
+                        if ('academic' in extras.keys()):
                             extras = extras['academic']
                             patent_cnt = 0
                             paper_cnt = {'A-1': 0, 'B-1': 0, 'C-1': 0, 'O-1': 0}
-                            if('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
+                            if ('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
                                 for k in extras['conf_paper'].keys():
                                     paper_cnt[k] += extras['conf_paper'][k]
-                            if('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
+                            if ('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
                                 for k in extras['journal_paper'].keys():
                                     paper_cnt[k] += extras['journal_paper'][k]
-                            if('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
+                            if ('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
                                 patent_cnt += extras['patent']
                         entry['patent'] = patent_cnt
                         entry['a_paper'] = paper_cnt['A-1']
@@ -525,26 +565,27 @@ def filterAndSort(req):
         finally:
             return JsonResponse(result)
 
-@check_admin
+
+@check_login
 @csrf_exempt
-def exportExcel(req):
-    if(req.method == 'POST'):
-        result = { 'status' : 1 }
+def filterAndSort(req):
+    if (req.method == 'POST'):
+        result = {'status': 1}
         try:
             data = json.loads(req.body)
             data = data['data']
             ordering = None
-            if(data['ordering'] == 'tot_score'):
+            if (data['ordering'] == 'tot_score'):
                 ordering = "-score"
-            elif(data['ordering'] == 'academic_score'):
+            elif (data['ordering'] == 'academic_score'):
                 ordering = "-academic_score"
-            elif(data['ordering'] == 'work_score'):
+            elif (data['ordering'] == 'work_score'):
                 ordering = "-work_score"
             filter = {}
             filter['apply_info_id'] = data['scholarship_name']
-            if(data['department'] != ''):
+            if (data['department'] != ''):
                 filter['user_id__department'] = data['department']
-            if(data['student_type'] == 'master'):
+            if (data['student_type'] == 'master'):
                 filter['user_id__student_type'] = 'master'
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
@@ -553,8 +594,9 @@ def exportExcel(req):
                 try:
                     print("Found entries not evaluated, start evaluating...")
                     scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
-                    if(scorer_id not in scorer_map):
-                        scorer_map[scorer_id] = scorer.ScoreCalculator(json.loads(entry.apply_info_id.apply_score_rule_id.json))
+                    if (scorer_id not in scorer_map):
+                        scorer_map[scorer_id] = scorer.ScoreCalculator(
+                            json.loads(entry.apply_info_id.apply_score_rule_id.json))
                     score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
                     entry.score = score_res[0]
                     entry.academic_score = score_res[1]
@@ -567,28 +609,115 @@ def exportExcel(req):
                 except Exception as e:
                     print(e)
             ## return results
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(ordering, "user_id_id")
-            
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(
+                ordering, "user_id_id")
+            pages = Paginator(queries, 15)
+            page = pages.page(data['page'])
+            result['data'] = {'page_cnt': pages.num_pages, 'count': pages.count, 'curr_entries': []}
+            seq = (data['page'] - 1) * 15
+            for item in page.object_list:
+                entry = {'seq': seq, 'student_num': item.user_id.student_id, 'name': item.user_id.name,
+                         'academic_score': item.academic_score, 'work_score': item.work_score, 'tot_score': item.score,
+                         'num_report': item.report_num}
+                seq += 1
+                ## merge A,B,C,O and patent nums
+                if (item.extra_info != ""):
+                    try:
+                        extras = json.loads(item.extra_info)
+                        if ('academic' in extras.keys()):
+                            extras = extras['academic']
+                            patent_cnt = 0
+                            paper_cnt = {'A-1': 0, 'B-1': 0, 'C-1': 0, 'O-1': 0}
+                            if ('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
+                                for k in extras['conf_paper'].keys():
+                                    paper_cnt[k] += extras['conf_paper'][k]
+                            if ('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
+                                for k in extras['journal_paper'].keys():
+                                    paper_cnt[k] += extras['journal_paper'][k]
+                            if ('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
+                                patent_cnt += extras['patent']
+                        entry['patent'] = patent_cnt
+                        entry['a_paper'] = paper_cnt['A-1']
+                        entry['b_paper'] = paper_cnt['B-1']
+                        entry['c_paper'] = paper_cnt['C-1']
+                        entry['o_paper'] = paper_cnt['O-1']
+                    except Exception as e:
+                        print(e)
+                result['data']['curr_entries'].append(entry)
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+        finally:
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def exportExcel(req):
+    if (req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            data = data['data']
+            ordering = None
+            if (data['ordering'] == 'tot_score'):
+                ordering = "-score"
+            elif (data['ordering'] == 'academic_score'):
+                ordering = "-academic_score"
+            elif (data['ordering'] == 'work_score'):
+                ordering = "-work_score"
+            filter = {}
+            filter['apply_info_id'] = data['scholarship_name']
+            if (data['department'] != ''):
+                filter['user_id__department'] = data['department']
+            if (data['student_type'] == 'master'):
+                filter['user_id__student_type'] = 'master'
+            else:
+                filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
+            for entry in queries.iterator():
+                try:
+                    print("Found entries not evaluated, start evaluating...")
+                    scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
+                    if (scorer_id not in scorer_map):
+                        scorer_map[scorer_id] = scorer.ScoreCalculator(
+                            json.loads(entry.apply_info_id.apply_score_rule_id.json))
+                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
+                    entry.score = score_res[0]
+                    entry.academic_score = score_res[1]
+                    entry.work_score = score_res[2]
+                    entry.extra_info = json.dumps(score_res[3])
+                    entry.wrong_time = score_res[4]
+                    entry.is_score_updated = True
+                    entry.save()
+                    print(score_res)
+                except Exception as e:
+                    print(e)
+            ## return results
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(
+                ordering, "user_id_id")
+
             response = HttpResponse(content_type='application/vnd.ms-excel')
             response['Content-Disposition'] = 'attachment;filename=order.xls'
             wb = xlwt.Workbook(encoding='utf8')
             sheet = wb.add_sheet('order-sheet')
 
-            sheet.write(0,0,'编号')
-            sheet.write(0,1,'学号')
-            sheet.write(0,2,'姓名')
-            sheet.write(0,3,'A类论文')
-            sheet.write(0,4,'B类论文')
-            sheet.write(0,5,'C类论文')
-            sheet.write(0,6,'O类论文')
-            sheet.write(0,7,'专利')
-            sheet.write(0,8,'学术得分')
-            sheet.write(0,9,'社工得分')
-            sheet.write(0,10,'教师评分')
-            sheet.write(0,11,'总分')
-            sheet.write(0,12,'被举报数')
-            sheet.write(0,13,'性别')
-            sheet.write(0,14,'系所')
+            sheet.write(0, 0, '编号')
+            sheet.write(0, 1, '学号')
+            sheet.write(0, 2, '姓名')
+            sheet.write(0, 3, 'A类论文')
+            sheet.write(0, 4, 'B类论文')
+            sheet.write(0, 5, 'C类论文')
+            sheet.write(0, 6, 'O类论文')
+            sheet.write(0, 7, '专利')
+            sheet.write(0, 8, '学术得分')
+            sheet.write(0, 9, '社工得分')
+            sheet.write(0, 10, '教师评分')
+            sheet.write(0, 11, '总分')
+            sheet.write(0, 12, '被举报数')
+            sheet.write(0, 13, '性别')
+            sheet.write(0, 14, '系所')
 
             seq = 0
             for item in queries:
@@ -596,7 +725,7 @@ def exportExcel(req):
                 sheet.write(seq, 0, seq)
                 sheet.write(seq, 1, item.user_id.student_id)
                 sheet.write(seq, 2, item.user_id.name)
-                
+
                 sheet.write(seq, 8, item.academic_score)
                 sheet.write(seq, 9, item.work_score)
                 sheet.write(seq, 10, 0)
@@ -606,27 +735,27 @@ def exportExcel(req):
                 sheet.write(seq, 14, models.DEPARTMENT_TO_NAME[item.user_id.department])
 
                 entry = {'patent': 0, 'a_paper': 0, 'b_paper': 0, 'c_paper': 0, 'o_paper': 0}
-                if(item.extra_info != ""):
+                if (item.extra_info != ""):
                     try:
                         extras = json.loads(item.extra_info)
-                        if('academic' in extras.keys()):
+                        if ('academic' in extras.keys()):
                             extras = extras['academic']
                             patent_cnt = 0
                             paper_cnt = {'A-1': 0, 'B-1': 0, 'C-1': 0, 'O-1': 0}
-                            if('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
+                            if ('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
                                 for k in extras['conf_paper'].keys():
                                     paper_cnt[k] += extras['conf_paper'][k]
-                            if('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
+                            if ('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
                                 for k in extras['journal_paper'].keys():
                                     paper_cnt[k] += extras['journal_paper'][k]
-                            if('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
+                            if ('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
                                 patent_cnt += extras['patent']
                         entry['patent'] = patent_cnt
                         entry['a_paper'] = paper_cnt['A-1']
                         entry['b_paper'] = paper_cnt['B-1']
                         entry['c_paper'] = paper_cnt['C-1']
                         entry['o_paper'] = paper_cnt['O-1']
-                        
+
                     except Exception as e:
                         print(e)
 
@@ -636,15 +765,14 @@ def exportExcel(req):
                 sheet.write(seq, 6, entry['o_paper'])
                 sheet.write(seq, 7, entry['patent'])
 
-            
             sheet2 = wb.add_sheet('detail-sheet')
 
-            sheet2.write(0,0,'编号')
-            sheet2.write(0,1,'学号')
-            sheet2.write(0,2,'姓名')
-            sheet2.write(0,3,'学术成果')
-            sheet2.write(0,4,'社会工作')
-            sheet2.write(0,5,'其它学术')
+            sheet2.write(0, 0, '编号')
+            sheet2.write(0, 1, '学号')
+            sheet2.write(0, 2, '姓名')
+            sheet2.write(0, 3, '学术成果')
+            sheet2.write(0, 4, '社会工作')
+            sheet2.write(0, 5, '其它学术')
 
             seq = 0
             for item in queries:
@@ -652,18 +780,18 @@ def exportExcel(req):
                 sheet2.write(seq, 0, seq)
                 sheet2.write(seq, 1, item.user_id.student_id)
                 sheet2.write(seq, 2, item.user_id.name)
-                
-                if(item.json != ""):
+
+                if (item.json != ""):
                     try:
                         # print("Not Empty")
                         academic_num = 0
                         details = json.loads(item.json)
                         academic_str = ''
-                        if('academic' in details.keys()):
+                        if ('academic' in details.keys()):
                             # print("academic")
                             academics = details['academic']
                             # print(extras)
-                            if('conf_paper' in academics.keys()) :
+                            if ('conf_paper' in academics.keys()):
                                 for paper in academics['conf_paper']:
                                     academic_num += 1
                                     ccfRank = paper['ccfRank']
@@ -677,8 +805,10 @@ def exportExcel(req):
                                     isLastYear = '最后一年申请' if paper['isLastYear'] == '1' else '不是最后一年申请'
 
                                     academic_str += '%s. CCF (%s); ' % (academic_num, ccfRank)
-                                    academic_str += '; '.join([isFirstAuthor, conf, title, date, numPages, category, isLastYear, author]) + '\n'
-                            if('journal_paper' in academics.keys()) :
+                                    academic_str += '; '.join(
+                                        [isFirstAuthor, conf, title, date, numPages, category, isLastYear,
+                                         author]) + '\n'
+                            if ('journal_paper' in academics.keys()):
                                 for paper in academics['journal_paper']:
                                     academic_num += 1
                                     ccfRank = paper['ccfRank']
@@ -692,8 +822,10 @@ def exportExcel(req):
                                     isLastYear = '最后一年申请' if paper['isLastYear'] == '1' else '不是最后一年申请'
 
                                     academic_str += '%s. CCF (%s); ' % (academic_num, ccfRank)
-                                    academic_str += '; '.join([isFirstAuthor, journal, title, date, numPages, category, isLastYear, author]) + '\n'
-                            if('patent' in academics.keys()) :
+                                    academic_str += '; '.join(
+                                        [isFirstAuthor, journal, title, date, numPages, category, isLastYear,
+                                         author]) + '\n'
+                            if ('patent' in academics.keys()):
                                 for patent in academics['patent']:
                                     academic_num += 1
                                     isFirstAuthor = '一作' if patent['isFirstAuthor'] == '1' else '非一作'
@@ -704,8 +836,9 @@ def exportExcel(req):
                                     isLastYear = '最后一年申请' if patent['isLastYear'] == '1' else '不是最后一年申请'
 
                                     academic_str += '%s. ' % (academic_num)
-                                    academic_str += '; '.join([isFirstAuthor, name, date, number, isLastYear, author]) + '\n'
-                            if('project' in academics.keys()) :
+                                    academic_str += '; '.join(
+                                        [isFirstAuthor, name, date, number, isLastYear, author]) + '\n'
+                            if ('project' in academics.keys()):
                                 for project in academics['project']:
                                     academic_num += 1
                                     author = project['author']
@@ -716,7 +849,7 @@ def exportExcel(req):
 
                                     academic_str += '%s. ' % (academic_num)
                                     academic_str += '; '.join([name, date, _type, isLastYear, author]) + '\n'
-                            if('intl_standard' in academics.keys()) :
+                            if ('intl_standard' in academics.keys()):
                                 for standard in academics['intl_standard']:
                                     academic_num += 1
                                     author = standard['author']
@@ -726,9 +859,9 @@ def exportExcel(req):
 
                                     academic_str += '%s. ' % (academic_num)
                                     academic_str += '; '.join([name, date, isLastYear, author]) + '\n'
-                            if('conf_award' in academics.keys()) :
+                            if ('conf_award' in academics.keys()):
                                 for paper in academics['conf_award']:
-                                    academic_num += 1      
+                                    academic_num += 1
                                     author = paper['author']
                                     confName = paper['confName']
                                     awardName = paper['awardName']
@@ -741,10 +874,10 @@ def exportExcel(req):
                             sheet2.write(seq, 3, academic_str.strip())
 
                         work_num = 0
-                        if('work' in details.keys()):
+                        if ('work' in details.keys()):
                             works = details['work']
                             work_str = ''
-                            if('post' in works.keys()) :
+                            if ('post' in works.keys()):
                                 for work in works['post']:
                                     work_num += 1
                                     name = work['name']
@@ -753,7 +886,7 @@ def exportExcel(req):
 
                                     work_str += '%s. %s; ' % (work_num, _class)
                                     work_str += '; '.join([name, date]) + '\n'
-                            if('accu_pro' in works.keys()) :
+                            if ('accu_pro' in works.keys()):
                                 for work in works['accu_pro']:
                                     work_num += 1
                                     content = work['content']
@@ -764,7 +897,7 @@ def exportExcel(req):
                                     work_str += '; '.join([content, date]) + '\n'
                             sheet2.write(seq, 4, work_str.strip())
 
-                        if('other_academic' in details.keys()):
+                        if ('other_academic' in details.keys()):
                             sheet2.write(seq, 5, str(details['other_academic']))
 
                     except Exception as e:
@@ -786,7 +919,7 @@ def exportExcel(req):
 def changePassword(req):
     '''Allow user to change the pwd
     '''
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -814,7 +947,7 @@ def changePassword(req):
 @check_admin
 @csrf_exempt
 def addMaterial(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -835,7 +968,7 @@ def addMaterial(req):
 @check_admin
 @csrf_exempt
 def getMaterial(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -852,7 +985,7 @@ def getMaterial(req):
 @check_admin
 @csrf_exempt
 def getMaterialList(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -869,7 +1002,7 @@ def getMaterialList(req):
 @check_admin
 @csrf_exempt
 def delMaterial(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -886,7 +1019,7 @@ def delMaterial(req):
 @check_admin
 @csrf_exempt
 def editMaterial(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -903,6 +1036,7 @@ def editMaterial(req):
             result['message'] = '操作失败'
             return JsonResponse(result)
 
+
 #####
 # ScoreRule APIs
 #####
@@ -911,7 +1045,7 @@ def editMaterial(req):
 @check_admin
 @csrf_exempt
 def addScoreRule(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -935,7 +1069,7 @@ def addScoreRule(req):
 @check_admin
 @csrf_exempt
 def getScoreRule(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -952,7 +1086,7 @@ def getScoreRule(req):
 @check_admin
 @csrf_exempt
 def getScoreRuleList(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -969,7 +1103,7 @@ def getScoreRuleList(req):
 @check_admin
 @csrf_exempt
 def delScoreRule(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -986,7 +1120,7 @@ def delScoreRule(req):
 @check_admin
 @csrf_exempt
 def editScoreRule(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1001,7 +1135,7 @@ def editScoreRule(req):
             model.save(force_update=True)
             ### refresh scorer if already in memory
             ### TODO - refresh user application entries
-            if(data['pk'] in scorer_map.keys()):
+            if (data['pk'] in scorer_map.keys()):
                 scorer_map[data['pk']] = scorer.ScoreCalculator(json.loads(data['json']))
             result['status'] = 0
             return JsonResponse(result)
@@ -1009,6 +1143,7 @@ def editScoreRule(req):
             print(e)
             result['message'] = '操作失败'
             return JsonResponse(result)
+
 
 #####
 # Scholarship APIs
@@ -1018,7 +1153,7 @@ def editScoreRule(req):
 @check_admin
 @csrf_exempt
 def addScholarshipInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1041,28 +1176,32 @@ def addScholarshipInfo(req):
 @check_login
 @csrf_exempt
 def getAvailableScholarshipList(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
-            result['data'] = serializers.serialize('json', models.ApplyInfoSetting.objects.filter(can_apply=True).order_by(
-                "-set_time"), fields=('scholarship_name', 'apply_info_id', 'set_time', 'apply_score_rule_id'))
+            result['data'] = serializers.serialize('json',
+                                                   models.ApplyInfoSetting.objects.filter(can_apply=True).order_by(
+                                                       "-set_time"), fields=(
+                    'scholarship_name', 'apply_info_id', 'set_time', 'apply_score_rule_id'))
             result['status'] = 0
         except Exception as e:
             print(e)
             result['message'] = '操作失败'
         finally:
             return JsonResponse(result)
+
 
 @check_login
 @csrf_exempt
 def getAllScholarshipList(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
             result['data'] = serializers.serialize('json', models.ApplyInfoSetting.objects.all().order_by(
-                "-set_time"), fields=('scholarship_name', 'apply_info_id', 'set_time', 'apply_score_rule_id', 'can_apply'))
+                "-set_time"), fields=(
+                'scholarship_name', 'apply_info_id', 'set_time', 'apply_score_rule_id', 'can_apply'))
             result['status'] = 0
         except Exception as e:
             print(e)
@@ -1070,10 +1209,11 @@ def getAllScholarshipList(req):
         finally:
             return JsonResponse(result)
 
+
 @check_login
 @csrf_exempt
 def getScholarshipMaterial(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1090,7 +1230,7 @@ def getScholarshipMaterial(req):
 @check_admin
 @csrf_exempt
 def getScholarshipInfoList(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1107,7 +1247,7 @@ def getScholarshipInfoList(req):
 @check_admin
 @csrf_exempt
 def delScholarshipInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1124,7 +1264,7 @@ def delScholarshipInfo(req):
 @check_admin
 @csrf_exempt
 def editScholarshipInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1147,7 +1287,7 @@ def editScholarshipInfo(req):
 @check_admin
 @csrf_exempt
 def switchScholarshipAvailability(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1163,13 +1303,14 @@ def switchScholarshipAvailability(req):
         finally:
             return JsonResponse(result)
 
+
 ###
 # Application APIs
 ###
 @check_login
 @csrf_exempt
 def sendApplyInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1177,14 +1318,15 @@ def sendApplyInfo(req):
                 apply_info_id=data['data']['scholarship_id'], can_apply=True)
             user = models.User.objects.get(username=data['username'])
             models.ApplyInfo.objects.update_or_create(user_id=user, apply_info_id=model,
-                                                      defaults={'apply_date': datetime.datetime.utcnow().replace(tzinfo=utc),
-                                                                'score': 0,
-                                                                'user_id': user,
-                                                                'apply_info_id': model,
-                                                                'json': data['data']['form'],
-                                                                'is_score_updated': False,
-                                                                'is_user_confirm': data['data']['confirm']})
-            if(data['data']['confirm']):
+                                                      defaults={
+                                                          'apply_date': datetime.datetime.utcnow().replace(tzinfo=utc),
+                                                          'score': 0,
+                                                          'user_id': user,
+                                                          'apply_info_id': model,
+                                                          'json': data['data']['form'],
+                                                          'is_score_updated': False,
+                                                          'is_user_confirm': data['data']['confirm']})
+            if (data['data']['confirm']):
                 scorer_executor.submit(scorerInBackGround, user=user.user_id, apply_info=model.apply_info_id)
             result['status'] = 0
         except Exception as e:
@@ -1193,23 +1335,24 @@ def sendApplyInfo(req):
         finally:
             return JsonResponse(result)
 
+
 @check_login
 @csrf_exempt
 def obtainApplyInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
             model = models.ApplyInfoSetting.objects.get(
                 apply_info_id=data['data']['scholarship_id'])
             user = None
-            if('stu_num' in data['data'].keys()):
+            if ('stu_num' in data['data'].keys()):
                 user = models.User.objects.get(student_id=data['data']['stu_num'])
             else:
                 user = models.User.objects.get(username=data['username'])
             try:
                 res = models.ApplyInfo.objects.get(user_id=user, apply_info_id=model)
-                result['data'] = { 'json': res.json, 'is_user_confirm': res.is_user_confirm, 'id': res.apply_id }
+                result['data'] = {'json': res.json, 'is_user_confirm': res.is_user_confirm, 'id': res.apply_id}
             except models.ApplyInfo.DoesNotExist:
                 result['data'] = ""
             finally:
@@ -1220,10 +1363,11 @@ def obtainApplyInfo(req):
         finally:
             return JsonResponse(result)
 
+
 @check_login
 @csrf_exempt
 def withdrawApplyInfo(req):
-    if(req.method == 'POST'):
+    if (req.method == 'POST'):
         result = {'status': 1}
         try:
             data = json.loads(req.body)
@@ -1238,14 +1382,15 @@ def withdrawApplyInfo(req):
         finally:
             return JsonResponse(result)
 
+
 ###
 ### Teacher Scoring
 ###
 @check_teacher
 @csrf_exempt
 def setApplyInfoScore(req):
-    if(req.method == 'POST'):
-        result = {'status' : 1}
+    if (req.method == 'POST'):
+        result = {'status': 1}
         try:
             data = json.loads(req.body)
             apply = models.ApplyInfo.objects.get(apply_id=data['data']['apply_id'])
@@ -1262,11 +1407,12 @@ def setApplyInfoScore(req):
         finally:
             return JsonResponse(result)
 
+
 @check_teacher
 @csrf_exempt
 def getApplyInfoScore(req):
-    if(req.method == 'POST'):
-        result = {'status' : 1}
+    if (req.method == 'POST'):
+        result = {'status': 1}
         try:
             data = json.loads(req.body)
             apply = models.ApplyInfo.objects.get(apply_id=data['data']['apply_id'])

@@ -67,7 +67,7 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="submitFilter(1)">确定</el-button>
+        <el-button type="primary" @click="submitFilter(1);currPage=1;">确定</el-button>
       </el-form-item>
       <el-form-item>
         <el-button type="success" @click="exportList" v-if="isAdmin">导出为EXCEL</el-button>
@@ -85,6 +85,7 @@
           background
           layout="prev, pager, next"
           :page-count="numPages"
+          :current-page.sync="currPage"
           @current-change="handlePageChange"
         ></el-pagination>
       </el-col>
@@ -109,6 +110,7 @@ export default {
     return {
       isAdmin: window.sessionStorage.user_type === "2",
       numPages: 0,
+      currPage: 1,
       model: {
         tableColumn: [
           {

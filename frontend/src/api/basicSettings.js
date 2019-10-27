@@ -110,5 +110,5 @@ const getGradeList = function () {
 
 export {
     getDepartmentList, getGenderList, getSpecificStudentTypeList, getRoughStudentTypeList,
-    getStudentStatusList, getPoliticalStatusList, getGradeList, getApplyMainSettings
+    getStudentStatusList, getPoliticalStatusList, getGradeList
 };

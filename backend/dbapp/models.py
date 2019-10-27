@@ -1,4 +1,16 @@
 from django.db import models
+## general dicts
+GENDER_TO_NAME = {'male':'男', 'female': '女'}
+DEPARTMENT_TO_NAME = {
+        "media": "媒体所",
+        "cad": "CAD所",
+        "hi_perf": "高性能所",
+        "ai": "人智所",
+        "software": "软件所",
+        "network": "网络所",
+        "gix": "GIX所",
+        "cs_ma": "计研"
+}
 
 # Create your models here.
 class User(models.Model):

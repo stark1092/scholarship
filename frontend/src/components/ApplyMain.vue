@@ -29,7 +29,7 @@
         <h1>申请状态: {{ scholarship_id === "" ? "请选择奖学金" : (isApplied ? '已申请' : '未申请') }}</h1>
       </el-col>
     </el-row>
-    <el-row v-if="isApplied && !stu_num && !is_teacher" type="flex" justify="start" align="middle" style="margin-top: 10px;">
+    <el-row v-if="isApplied && !stu_num && !is_teacher && !readOnly" type="flex" justify="start" align="middle" style="margin-top: 10px;">
       <el-col align="start">
         <el-button type="danger" @click="withdrawApplyInfo">撤回申请</el-button>
       </el-col>
@@ -159,6 +159,18 @@
   </div>
 </template>
 
+<style scoped>
+h1 {
+  font-size: 1.17em;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+}
+
+.apply-main-container {
+  padding-left: 20px;
+}
+</style>
+
 <script>
 /* eslint-disable */
 import PerInfo from "./PersonalInfo";
@@ -197,7 +209,7 @@ export default {
       this.scholarship_id = this.scholarship_id_preset;
     }
     this.$http
-      .post("getAvailableScholarshipList", {
+      .post(this.readOnly ? "getAllScholarshipList" : "getAvailableScholarshipList", {
         username: window.sessionStorage.username,
         token: window.sessionStorage.token
       })
@@ -355,6 +367,7 @@ export default {
         });
     },
     setReadOnly() {
+      console.log(this.$route.path)
       let re_view_apply = /^\/.*?view_apply$/;
       let re_apply = /^\/.*?apply/;
       if (re_view_apply.test(this.$route.path)) {

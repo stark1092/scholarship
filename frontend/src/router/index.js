@@ -83,6 +83,11 @@ const router = new Router({
       ]
     },
     {
+      path: '/view_apply',
+      component: ApplyMain,
+      meta: userMeta
+    },
+    {
       /**
        * Router for admins
        */

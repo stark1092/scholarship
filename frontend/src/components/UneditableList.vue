@@ -1,12 +1,13 @@
 <template>
   <el-form :model="model">
     <el-table :data="model.tableData" :stripe="stripe" style="width: 100%" class="resetPadding">
-      <el-table-column
-        v-for="(col,index) in model.tableColumn"
-        v-bind:key="index"
+      <div v-for="(col,index) in model.tableColumn" v-bind:key="index">
+        <el-table-column
+        v-if="col.show"
         :label="col.label"
         :width="col.colWidth"
       >
+      
         <template slot="header">
           <span>{{ col.label }}</span>
           <el-button
@@ -29,6 +30,7 @@
           </el-form-item>
         </template>
       </el-table-column>
+      </div>
     </el-table>
   </el-form>
 </template>

@@ -197,7 +197,7 @@ Example return data of this API
 
 def getStudentInfo(token):
     res = requests.get(
-        'https://stu.cs.tsinghua.edu.cn:4443/api/v2/userinfo?access_token=' + token)
+        'https://stu.cs.tsinghua.edu.cn/api/v2/userinfo?access_token=' + token)
     return json.loads(res.text)
 # utils end
 
@@ -233,7 +233,7 @@ def userlogin_stucs_cb(req):
                     'client_secret': stucs_client_secret}
             try:
                 res = requests.post(
-                'https://stu.cs.tsinghua.edu.cn:4443/api/v2/access_token', data=data, timeout=5)
+                'https://stu.cs.tsinghua.edu.cn/api/v2/access_token', data=data, timeout=5)
             except requests.exceptions.RequestException:
                 result['message'] = '授权服务器无响应'
                 raise Exception("Failed to authorize")
@@ -587,6 +587,8 @@ def exportExcel(req):
             sheet.write(0,10,'教师评分')
             sheet.write(0,11,'总分')
             sheet.write(0,12,'被举报数')
+            sheet.write(0,13,'性别')
+            sheet.write(0,14,'系所')
 
             seq = 0
             for item in queries:
@@ -600,6 +602,8 @@ def exportExcel(req):
                 sheet.write(seq, 10, 0)
                 sheet.write(seq, 11, item.score)
                 sheet.write(seq, 12, item.report_num)
+                sheet.write(seq, 13, models.GENDER_TO_NAME[item.user_id.gender])
+                sheet.write(seq, 14, models.DEPARTMENT_TO_NAME[item.user_id.department])
 
                 entry = {'patent': 0, 'a_paper': 0, 'b_paper': 0, 'c_paper': 0, 'o_paper': 0}
                 if(item.extra_info != ""):

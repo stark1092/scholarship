@@ -304,6 +304,13 @@ export default {
           if (res.status === 0) {
             res = JSON.parse(res.data);
             that.academic_criteria = res.academic_criteria;
+            that.academic_criteria.forEach(criterion => 
+              {
+                criterion.content.tableColumn.forEach(item => {
+                  if (item.label === "开会时间" || item.label === "出版日期")
+                    item.hidden = window.sessionStorage.user_type === "1";
+              })
+            })
             that.academic_note = res.academic_note;
             that.work_criteria = res.work_criteria;
             that.work_note = res.work_note;

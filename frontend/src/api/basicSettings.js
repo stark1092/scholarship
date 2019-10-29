@@ -41,6 +41,28 @@ const getDepartmentList = function () {
     }]
 }
 
+const getDepartmentListTeacher = function () {
+    return [{
+        value: "",
+        label: "全部"
+    }, {
+        value: "hi_perf",
+        label: "高性能所"
+    }, {
+        value: "media",
+        label: "媒体所"
+    }, {
+        value: "ai",
+        label: "人智所"
+    }, {
+        value: "software",
+        label: "软件所"
+    }, {
+        value: "network",
+        label: "网络所"
+    }]
+}
+
 const getSpecificStudentTypeList = function () {
     return [{
         value: "master",
@@ -110,5 +132,5 @@ const getGradeList = function () {
 
 export {
     getDepartmentList, getGenderList, getSpecificStudentTypeList, getRoughStudentTypeList,
-    getStudentStatusList, getPoliticalStatusList, getGradeList
+    getStudentStatusList, getPoliticalStatusList, getGradeList, getDepartmentListTeacher
 };

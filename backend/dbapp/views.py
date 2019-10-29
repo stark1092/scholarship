@@ -5,25 +5,21 @@ from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
 from django.db import connections
 from django.core.paginator import Paginator
-from dbapp import models
 import requests
 import urllib
 from django.utils.timezone import utc
 import urllib.parse
 import json
 from config import *
+from . import models, scorer
 import uuid
-import sys
 import datetime
 import mammoth
-from dbapp import scorer
 import time
 import xlwt
 from io import BytesIO
 
-sys.path.append('../')
-
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 scorer_executor = ThreadPoolExecutor(max_workers=scorer_workers)
 scorer_map = {}
@@ -456,9 +452,122 @@ def sendNotifyUpload(req):
             return JsonResponse(result)
 
 
-@check_admin_teacher
+def evalNormalScores(filter):
+    # eval normal scores
+    queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
+    for entry in queries.iterator():
+        try:
+            print("Found entries not evaluated, start evaluating...")
+            scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
+            if (scorer_id not in scorer_map):
+                scorer_map[scorer_id] = scorer.ScoreCalculator(
+                    json.loads(entry.apply_info_id.apply_score_rule_id.json))
+            score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
+            entry.score = score_res[0]
+            entry.academic_score = score_res[1]
+            entry.work_score = score_res[2]
+            entry.extra_info = json.dumps(score_res[3])
+            entry.wrong_time = score_res[4]
+            entry.is_score_updated = True
+            entry.save()
+            print(score_res)
+        except Exception as e:
+            print(e)
+
+
+@check_teacher
 @csrf_exempt
-def filterAndSortAdminTeacher(req):
+def filterAndSortTeacher(req):
+    if (req.method == 'POST'):
+        result = {'status': 1}
+        try:
+            data = json.loads(req.body)
+            teacher = models.User.objects.get(username=data['username'])
+            data = data['data']
+            filter = {}
+            filter_teacher = {}
+            filter['apply_info_id'] = data['scholarship_name']
+            filter_teacher['apply_id__apply_info_id'] = data['scholarship_name']
+            if (data['department'] != ''):
+                filter['user_id__department'] = data['department']
+                filter_teacher['apply_id__user_id__department'] = data['department']
+            if (data['student_type'] == 'master'):
+                filter['user_id__student_type'] = 'master'
+                filter_teacher['apply_id__user_id__student_type'] = 'master'
+            else:
+                filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
+                filter_teacher['apply_id__user_id__student_type__in'] = ['doctor_straight', 'master_doctor',
+                                                                         'doctor_normal']
+            evalNormalScores(filter)
+            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True,
+                                                      is_user_confirm=True)
+            _result_list = []
+            for item in queries:
+                try:
+                    res = models.TeacherScore.objects.get(teacher_id=teacher, apply_id=item)
+                    _result_list.append({'score': res.score, 'item': item})
+                except models.TeacherScore.DoesNotExist:
+                    _result_list.append({'score': 0, 'item': item})
+            if (data['ordering'] == 'tot_score'):
+                _result_list = sorted(_result_list, key=lambda x: (-x['item'].score, x['item'].user_id.name))
+            elif (data['ordering'] == 'academic_score'):
+                _result_list = sorted(_result_list, key=lambda x: (-x['item'].academic_score, x['item'].user_id.name))
+            elif (data['ordering'] == 'work_score'):
+                _result_list = sorted(_result_list, key=lambda x: (-x['item'].work_score, x['item'].user_id.name))
+            elif (data['ordering'] == 'teacher_score'):
+                _result_list = sorted(_result_list, key=lambda x: (-x['score'], x['item'].user_id.name))
+
+            pages = Paginator(_result_list, 15)
+            page = pages.page(data['page'])
+            result['data'] = {'page_cnt': pages.num_pages, 'count': pages.count, 'curr_entries': []}
+            seq = (data['page'] - 1) * 15
+
+            for item in page.object_list:
+                teacher_score = item['score']
+                item = item['item']
+                entry = {'seq': seq, 'student_num': item.user_id.student_id, 'name': item.user_id.name,
+                         'academic_score': item.academic_score, 'work_score': item.work_score,
+                         'tot_score': item.score,
+                         'teacher_score': teacher_score,
+                         'department': models.DEPARTMENT_TO_NAME[item.user_id.department],
+                         'instructor': item.user_id.instructor,
+                         'num_report': item.report_num}
+                seq += 1
+                ## merge A,B,C,O and patent nums
+                if (item.extra_info != ""):
+                    try:
+                        extras = json.loads(item.extra_info)
+                        if ('academic' in extras.keys()):
+                            extras = extras['academic']
+                            patent_cnt = 0
+                            paper_cnt = {'A-1': 0, 'B-1': 0, 'C-1': 0, 'O-1': 0}
+                            if ('conf_paper' in extras.keys() and isinstance(extras['conf_paper'], dict)):
+                                for k in extras['conf_paper'].keys():
+                                    paper_cnt[k] += extras['conf_paper'][k]
+                            if ('journal_paper' in extras.keys() and isinstance(extras['journal_paper'], dict)):
+                                for k in extras['journal_paper'].keys():
+                                    paper_cnt[k] += extras['journal_paper'][k]
+                            if ('patent' in extras.keys() and not isinstance(extras['patent'], dict)):
+                                patent_cnt += extras['patent']
+                        entry['patent'] = patent_cnt
+                        entry['a_paper'] = paper_cnt['A-1']
+                        entry['b_paper'] = paper_cnt['B-1']
+                        entry['c_paper'] = paper_cnt['C-1']
+                        entry['o_paper'] = paper_cnt['O-1']
+                    except Exception as e:
+                        print(e)
+                result['data']['curr_entries'].append(entry)
+            result['status'] = 0
+        except Exception as e:
+            print(e)
+            result['message'] = '服务器内部错误'
+        finally:
+            return JsonResponse(result)
+
+
+@check_admin
+@csrf_exempt
+def filterAndSortAdmin(req):
     if (req.method == 'POST'):
         result = {'status': 1}
         try:
@@ -483,26 +592,7 @@ def filterAndSortAdminTeacher(req):
                 filter['user_id__student_type'] = 'master'
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
-            # eval normal scores
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
-            for entry in queries.iterator():
-                try:
-                    print("Found entries not evaluated, start evaluating...")
-                    scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
-                    if (scorer_id not in scorer_map):
-                        scorer_map[scorer_id] = scorer.ScoreCalculator(
-                            json.loads(entry.apply_info_id.apply_score_rule_id.json))
-                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
-                    entry.score = score_res[0]
-                    entry.academic_score = score_res[1]
-                    entry.work_score = score_res[2]
-                    entry.extra_info = json.dumps(score_res[3])
-                    entry.wrong_time = score_res[4]
-                    entry.is_score_updated = True
-                    entry.save()
-                    print(score_res)
-                except Exception as e:
-                    print(e)
+            evalNormalScores(filter)
             # eval teacher scores
             queries = models.ApplyInfo.objects.filter(**filter, is_teacher_score_updated=False, is_user_confirm=True)
             for entry in queries.iterator():
@@ -589,25 +679,7 @@ def filterAndSort(req):
                 filter['user_id__student_type'] = 'master'
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
-            for entry in queries.iterator():
-                try:
-                    print("Found entries not evaluated, start evaluating...")
-                    scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
-                    if (scorer_id not in scorer_map):
-                        scorer_map[scorer_id] = scorer.ScoreCalculator(
-                            json.loads(entry.apply_info_id.apply_score_rule_id.json))
-                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
-                    entry.score = score_res[0]
-                    entry.academic_score = score_res[1]
-                    entry.work_score = score_res[2]
-                    entry.extra_info = json.dumps(score_res[3])
-                    entry.wrong_time = score_res[4]
-                    entry.is_score_updated = True
-                    entry.save()
-                    print(score_res)
-                except Exception as e:
-                    print(e)
+            evalNormalScores(filter)
             ## return results
             queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(
                 ordering, "user_id_id")
@@ -675,25 +747,7 @@ def exportExcel(req):
                 filter['user_id__student_type'] = 'master'
             else:
                 filter['user_id__student_type__in'] = ['doctor_straight', 'master_doctor', 'doctor_normal']
-            queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=False, is_user_confirm=True)
-            for entry in queries.iterator():
-                try:
-                    print("Found entries not evaluated, start evaluating...")
-                    scorer_id = entry.apply_info_id.apply_score_rule_id.apply_score_rule_id
-                    if (scorer_id not in scorer_map):
-                        scorer_map[scorer_id] = scorer.ScoreCalculator(
-                            json.loads(entry.apply_info_id.apply_score_rule_id.json))
-                    score_res = scorer_map[scorer_id].getScore(json.loads(entry.json), entry.extra_score)
-                    entry.score = score_res[0]
-                    entry.academic_score = score_res[1]
-                    entry.work_score = score_res[2]
-                    entry.extra_info = json.dumps(score_res[3])
-                    entry.wrong_time = score_res[4]
-                    entry.is_score_updated = True
-                    entry.save()
-                    print(score_res)
-                except Exception as e:
-                    print(e)
+            evalNormalScores(filter)
             ## return results
             queries = models.ApplyInfo.objects.filter(**filter, is_score_updated=True, is_user_confirm=True).order_by(
                 ordering, "user_id_id")

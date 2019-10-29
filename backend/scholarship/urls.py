@@ -13,7 +13,6 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import path
 from dbapp import views
 
@@ -28,7 +27,8 @@ urlpatterns = [
     path('sendNotifyUpload', views.sendNotifyUpload),
     path('delNotify', views.delNotify),
     path('filterAndSort', views.filterAndSort),
-    path('filterAndSortPrivileged', views.filterAndSortAdminTeacher),
+    path('filterAndSortAdmin', views.filterAndSortAdmin),
+    path('filterAndSortTeacher', views.filterAndSortTeacher),
     path('exportExcel', views.exportExcel),
     path('changePassword', views.changePassword),
     ### material APIs

@@ -19,12 +19,11 @@
         style="width: 100%;"
         :cell-style="{'vertical-align':'middle'}"
       >
-        <div v-for="(col,index) in model.tableColumn"
-            v-bind:key="index">
           <el-table-column
-            v-if="!col.hidden"
             :label="col.label"
             :width="col.colWidth"
+            v-for="(col,index) in model.tableColumn"
+            v-bind:key="index"
           >
             <template slot="header">
               <span>{{ col.label }}</span>
@@ -79,7 +78,6 @@
               </el-form-item>
             </template>
           </el-table-column>
-        </div>
         <el-table-column v-if="!isReadOnly">
           <template slot-scope="scope">
             <el-button

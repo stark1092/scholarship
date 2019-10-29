@@ -1,9 +1,8 @@
 <template>
   <el-form :model="model">
     <el-table :data="model.tableData" :stripe="stripe" style="width: 100%" class="resetPadding">
-      <div v-for="(col,index) in model.tableColumn" v-bind:key="index">
         <el-table-column
-        v-if="col.show"
+        v-for="(col,index) in model.tableColumn" v-bind:key="index"
         :label="col.label"
         :width="col.colWidth"
       >
@@ -30,7 +29,6 @@
           </el-form-item>
         </template>
       </el-table-column>
-      </div>
     </el-table>
   </el-form>
 </template>

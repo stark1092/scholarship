@@ -163,7 +163,7 @@ class TeacherScore(models.Model):
         unique_together = ("apply_id", "teacher_id")
     apply_id = models.ForeignKey(ApplyInfo, on_delete=models.CASCADE)
     teacher_id = models.ForeignKey(User, on_delete=models.CASCADE)
-    score = models.IntegerField(null=False, default=0)
+    score = models.FloatField(null=False, default=0)
 
 class SessionToken(models.Model):
     user = models.OneToOneField(User, models.CASCADE)

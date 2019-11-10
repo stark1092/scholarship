@@ -516,6 +516,8 @@ def filterAndSortTeacher(req):
                 _result_list = sorted(_result_list, key=lambda x: (-x['item'].work_score, x['item'].user_id.name))
             elif (data['ordering'] == 'teacher_score'):
                 _result_list = sorted(_result_list, key=lambda x: (-x['score'], x['item'].user_id.name))
+            elif (data['ordering'] == 'student_id'):
+                ordering = "user_id__student_id"
 
             pages = Paginator(_result_list, 15)
             page = pages.page(data['page'])

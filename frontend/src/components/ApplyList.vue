@@ -150,22 +150,6 @@ export default {
                     },
                     {
                         type: 'text',
-                        label: '学术得分',
-                        name: 'academic_score'
-                    },
-                    {
-                        type: 'text',
-                        label: '社工得分',
-                        name: 'work_score'
-                    },
-                    {
-                        type: 'text',
-                        label: '基础得分',
-                        name: 'tot_score',
-                        note: '基础得分=学术x0.7+(社工得分+专项得分)x0.3'
-                    },
-                    {
-                        type: 'text',
                         label: '教师评分',
                         name: 'teacher_score'
                     },
@@ -296,21 +280,6 @@ export default {
                     },
                     {
                         type: 'text',
-                        label: '学术得分',
-                        name: 'academic_score'
-                    },
-                    {
-                        type: 'text',
-                        label: '社工得分',
-                        name: 'work_score'
-                    },
-                    {
-                        type: 'text',
-                        label: '总分',
-                        name: 'tot_score'
-                    },
-                    {
-                        type: 'text',
                         label: '被举报数',
                         name: 'num_report',
                         note:
@@ -350,16 +319,21 @@ export default {
                     scholarship_name: '',
                     student_type: !isTeacher ? '' : 'doctor',
                     department: '',
-                    ordering: !isTeacher ? '' : 'tot_score'
+                    ordering: 'student_id'
                 },
                 scholarship_names: [],
                 student_types: getRoughStudentTypeList(),
                 departments: isTeacher ? getDepartmentListTeacher() : getDepartmentList(),
                 ordering_list: [
                     {
+                        value: 'student_id',
+                        label: '学号',
+                        show: true
+                    },
+                    {
                         value: 'tot_score',
                         label: (!isTeacher) ? '总分' : '基础得分',
-                        show: true
+                        show: false
                     },
                     {
                         value: 'teacher_score',
@@ -369,12 +343,12 @@ export default {
                     {
                         value: 'academic_score',
                         label: '学术得分',
-                        show: true
+                        show: false
                     },
                     {
                         value: 'work_score',
                         label: '社工得分',
-                        show: true
+                        show: false
                     }
                 ]
             }

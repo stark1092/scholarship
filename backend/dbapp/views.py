@@ -671,6 +671,8 @@ def filterAndSort(req):
                 ordering = "-academic_score"
             elif (data['ordering'] == 'work_score'):
                 ordering = "-work_score"
+            elif (data['ordering'] == 'student_id'):
+                ordering = "user_id__student_id"
             filter = {}
             filter['apply_info_id'] = data['scholarship_name']
             if (data['department'] != ''):

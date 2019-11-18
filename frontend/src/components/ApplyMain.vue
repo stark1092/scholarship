@@ -41,6 +41,31 @@
             </el-col>
         </el-row>
         <el-divider></el-divider>
+        <div v-if="!readOnly">
+            <el-row align="middle" justify="start" type="flex">
+                <el-col align="start">
+                    <h1>导入以前的申请</h1>
+                </el-col>
+            </el-row>
+            <el-row align="middle" justify="start" style="margin-top: 20px;" type="flex">
+                <el-col align="start">
+                    <el-select
+                        @change="onSelectFormerScholarship"
+                        placeholder="请选择以前申请的奖学金"
+                        style="width: 30vw;"
+                        v-model="scholarship_former_id"
+                    >
+                        <el-option
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                            v-for="item in all_scholarships"
+                        ></el-option>
+                    </el-select>
+                </el-col>
+            </el-row>
+            <el-divider></el-divider>
+        </div>
         <el-row :gutter="0" align="middle" justify="start" type="flex">
             <el-col align="start">
                 <h1>基本信息</h1>
@@ -218,10 +243,12 @@ export default {
             is_teacher: window.sessionStorage.user_type === '1',
             teacher_score: 0.0,
             scholarship_id: '',
+            scholarship_former_id: '',
             isApplied: false,
             stu_num: this.$route.query.stu_num,
             scholarship_id_preset: '',
-            available_scholarships: []
+            available_scholarships: [],
+            all_scholarships: []
         };
     },
     components: { PerInfo, EditableList },
@@ -371,6 +398,106 @@ export default {
                                             that.getTeacherScore();
                                         }
                                     } else that.isApplied = false;
+                                } else {
+                                    swal({
+                                        title: '出错了',
+                                        text: res.message,
+                                        icon: 'error',
+                                        button: '确定'
+                                    }).then(val => {
+                                        if (res.status === -1) {
+                                            that.$router.push('/');
+                                        }
+                                    });
+                                }
+                            })
+                            .catch(response => {
+                                console.log(response);
+                            });
+                    } else {
+                        swal({
+                            title: '出错了',
+                            text: res.message,
+                            icon: 'error',
+                            button: '确定'
+                        }).then(val => {
+                            if (res.status === -1) {
+                                that.$router.push('/');
+                            }
+                        });
+                    }
+                })
+                .catch(response => {
+                    console.log(response);
+                });
+            if (!this.readOnly) {
+                this.$http
+                    .post('getAllScholarshipList',
+                        {
+                            username: window.sessionStorage.username,
+                            token: window.sessionStorage.token
+                        }
+                    )
+                    .then(response => {
+                        let res = JSON.parse(response.bodyText);
+                        if (res.status === 0) {
+                            res = JSON.parse(res.data);
+                            res.forEach(e => {
+                                if (e.pk != this.scholarship_id) {
+                                    that.all_scholarships.push({
+                                        value: e.pk,
+                                        label: e.fields.scholarship_name
+                                    });
+                                }
+                            });
+                        } else {
+                            swal({
+                                title: '出错了',
+                                text: res.message,
+                                icon: 'error',
+                                button: '确定'
+                            }).then(val => {
+                                if (res.status === -1) {
+                                    that.$router.push('/');
+                                }
+                            });
+                        }
+                    })
+                    .catch(response => {
+                        console.log(response);
+                    });
+            }
+        },
+        onSelectFormerScholarship(val) {
+            let that = this;
+            this.$http
+                .post('getScholarshipMaterial', {
+                    username: window.sessionStorage.username,
+                    token: window.sessionStorage.token,
+                    data: String(val)
+                })
+                .then(response => {
+                    let res = JSON.parse(response.bodyText);
+                    if (res.status === 0) {
+                        res = JSON.parse(res.data);
+                        let post_data = { scholarship_id: val };
+                        if (that.readOnly && that.stu_num != '') {
+                            post_data['stu_num'] = that.stu_num;
+                        }
+                        that.$http
+                            .post('obtainApplyInfo', {
+                                username: window.sessionStorage.username,
+                                token: window.sessionStorage.token,
+                                data: post_data
+                            })
+                            .then(response => {
+                                let res = JSON.parse(response.bodyText);
+                                if (res.status === 0) {
+                                    if (res.data && res.data.json != '') {
+                                        res = JSON.parse(res.data.json);
+                                        that.setFormData(res);
+                                    }
+                                    this.formValidationRes = [];
                                 } else {
                                     swal({
                                         title: '出错了',
